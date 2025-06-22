@@ -1,0 +1,26 @@
+# Hardware config for ESP32-DevKit and RGB LED
+# To support multiple boards, override these substitutions in config.yaml as needed:
+# For Teyleten Robot ESP32-S3-N8R2:
+#   board_type: esp32-s3-devkitm-1
+#   rgb_led_pin: 48
+# For esp32-s3-zero:
+#   board_type: esp32-s3-devkitc-1
+#   rgb_led_pin: 1
+substitutions:
+  board_type: esp32-s3-devkitc-1
+  rgb_led_pin: '1'
+
+# esp32:
+#   board: esp32s3-zero
+#   variant: esp32s3
+#   framework:
+#     type: esp-idf
+#     # version: latest #Force latest to get a version that supports esp32-s3-zero
+#     # platform_version: 53.03.13-1
+#     # sdkconfig_options:
+#     #   CONFIG_USB_SERIAL_JTAG_VFS_DISABLE: "y"
+#     #   CONFIG_USB_SERIAL_JTAG: "n"
+#     # #   CONFIG_RMT_RECV_FUNC_IN_IRAM: "y"
+#     # #   CONFIG_RMT_ISR_IRAM_SAFE: "y"
+#     advanced:
+#       ignore_efuse_custom_mac: true #Required for esp-idf v5 

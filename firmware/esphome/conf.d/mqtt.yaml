@@ -1,0 +1,14 @@
+# MQTT config with user-defined variables and RGB color control
+substitutions:
+  mqtt_endpoint: "wss://realtime.printago.io"
+  mqtt_port: "443"
+  mqtt_username: ""
+  mqtt_password: ""
+  mqtt_client_id: "apiclient_XXXX"
+
+mqtt:
+  broker: ${mqtt_endpoint}
+  port: ${mqtt_port}
+  username: ${mqtt_username}
+  password: ${mqtt_password}
+  client_id: ${mqtt_client_id}

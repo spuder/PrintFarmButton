@@ -1,0 +1,9 @@
+light:
+- platform: esp32_rmt_led_strip
+  id: openqueue_rgb
+  name: "OpenQueue RGB"
+  chipset: WS2812
+  pin: 1
+  num_leds: 1
+  rgb_order: GRB
+  # rmt_channel: 0

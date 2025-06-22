@@ -1,0 +1,11 @@
+# Example .gitignore for ESPHome modular project
+*.pyc
+__pycache__/
+.secrets.yaml
+*.log
+*.bin
+*.elf
+*.map
+build/
+secrets.yaml
+.esphome/

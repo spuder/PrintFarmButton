@@ -1,0 +1,8 @@
+# Webserver config with v3
+web_server:
+  port: 80
+  version: 3
+  include_internal: true
+  auth:
+    username: admin
+    password: admin
