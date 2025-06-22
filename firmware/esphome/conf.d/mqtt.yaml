@@ -1,14 +1,93 @@
 # MQTT config with user-defined variables and RGB color control
 substitutions:
   mqtt_endpoint: "wss://realtime.printago.io"
-  mqtt_port: "443"
-  mqtt_username: ""
-  mqtt_password: ""
   mqtt_client_id: "apiclient_XXXX"
 
 mqtt:
-  broker: ${mqtt_endpoint}
-  port: ${mqtt_port}
-  username: ${mqtt_username}
-  password: ${mqtt_password}
+  id: mqtt_client_id
+  broker: ""
   client_id: ${mqtt_client_id}
+  port: 1883
+  username: ""
+  password: ""
+  discover_ip: false
+  discovery_retain: false
+  use_abbreviations: false
+  topic_prefix:
+  log_topic:
+  skip_cert_cn_check: true
+  clean_session: true
+  enable_on_boot: false
+  discovery_prefix:
+
+
+binary_sensor:
+- platform: template
+  name: "MQTT Connection"
+  id: mqtt_connected
+  device_class: connectivity
+  lambda: |-
+    return id(mqtt_client_id)->is_connected();
+
+text:
+- platform: template
+  name: "MQTT Endpoint"
+  id: mqtt_endpoint_text
+  mode: text
+  restore_value: true
+  optimistic: true
+  on_value:
+    then:
+    - lambda: |-
+        id(mqtt_client_id).set_broker_address(x.c_str());
+        if (!id(mqtt_endpoint_text).state.empty() && !id(printer_id_text).state.empty() && !id(user_id_text).state.empty()) {
+          id(mqtt_client_id).enable();
+          id(mqtt_client_id).subscribe(
+            "stores/" + id(user_id_text).state + "/printer-stats/" + id(printer_id_text).state,
+            [](const std::string &topic, const std::string &payload) {
+              id(last_mqtt_message).publish_state(payload);
+            }
+          );
+        }
+- platform: template
+  name: "Printer ID"
+  id: printer_id_text
+  mode: text
+  restore_value: true
+  optimistic: true
+  on_value:
+    then:
+    - lambda: |-
+        if (!id(mqtt_endpoint_text).state.empty() && !id(printer_id_text).state.empty() && !id(user_id_text).state.empty()) {
+          id(mqtt_client_id).enable();
+          id(mqtt_client_id).subscribe(
+            "stores/" + id(user_id_text).state + "/printer-stats/" + id(printer_id_text).state,
+            [](const std::string &topic, const std::string &payload) {
+              id(last_mqtt_message).publish_state(payload);
+            }
+          );
+        }
+- platform: template
+  name: "User ID"
+  id: user_id_text
+  mode: text
+  restore_value: true
+  optimistic: true
+  on_value:
+    then:
+    - lambda: |-
+        if (!id(mqtt_endpoint_text).state.empty() && !id(printer_id_text).state.empty() && !id(user_id_text).state.empty()) {
+          id(mqtt_client_id).enable();
+          id(mqtt_client_id).subscribe(
+            "stores/" + id(user_id_text).state + "/printer-stats/" + id(printer_id_text).state,
+            [](const std::string &topic, const std::string &payload) {
+              id(last_mqtt_message).publish_state(payload);
+            }
+          );
+        }
+- platform: template
+  name: "Last MQTT Message"
+  id: last_mqtt_message
+  mode: text
+  restore_value: false
+  optimistic: true

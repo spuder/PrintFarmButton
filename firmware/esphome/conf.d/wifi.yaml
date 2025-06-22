@@ -1,0 +1,14 @@
+wifi:
+  # ssid: !secret wifi_ssid
+  # password: !secret wifi_password
+  ap:
+    # ssid: "OpenQueue-${mac_suffix}"
+    ssid: "OpenQueue"
+    # password: "openqueue123"
+  on_connect:
+    then:
+    - logger.log: "WiFi Connected!"
+  on_disconnect:
+    then:
+    - logger.log: "WiFi Disconnected! Starting fallback hotspot."
+captive_portal:
