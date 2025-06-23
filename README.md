@@ -35,3 +35,20 @@ Requires an esp32 and RGB Leds, and a 3d printer of course
 
 ## Sofware
 
+## LED Color States
+
+The RGB LED indicates printer status as follows:
+
+| Color   | Meaning                                      | Condition                                                                 |
+|---------|----------------------------------------------|--------------------------------------------------------------------------|
+| White   | Offline / Not connected                     | `isOnline == false`                                                      |
+| Green   | Printing                                    | `isOnline == true && state == "RUNNING"`                                |
+| Purple  | Idle (finished & available)                 | `isOnline == true && (state == "FINISH" or "FINISHED") && isAvailable == true` |
+| Red     | Finished, not cleared (not available)       | `isOnline == true && (state == "FINISH" or "FINISHED") && isAvailable == false` |
+| Off     | Unknown/other state                         | Any other state                                                          |
+
+- `isOnline`, `state`, and `isAvailable` are fields in the MQTT JSON payload.
+- Colors are set automatically based on the most recent MQTT message.
+
+---
+

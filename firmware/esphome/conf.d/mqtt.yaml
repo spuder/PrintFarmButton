@@ -1,26 +1,32 @@
-# MQTT config with user-defined variables and RGB color control
-substitutions:
-  mqtt_endpoint: "wss://realtime.printago.io"
-  mqtt_client_id: "apiclient_XXXX"
-
 mqtt:
   id: mqtt_client_id
-  broker: ""
-  client_id: ${mqtt_client_id}
+  # broker: ""
+  broker: "192.168.81.154"
+  client_id: ""
   port: 1883
   username: ""
   password: ""
   discover_ip: false
+  discovery: false
   discovery_retain: false
+  discovery_prefix:
   use_abbreviations: false
   topic_prefix:
-  log_topic:
-  skip_cert_cn_check: true
+  log_topic: # skip_cert_cn_check: true
+
   clean_session: true
-  enable_on_boot: false
-  discovery_prefix:
-
-
+  enable_on_boot: false # Don't auto-connect, we'll connect manually when ready
+  birth_message:
+    topic:
+    payload:
+  will_message:
+    topic:
+    payload:
+      # on_connect:
+      # - logger.log:
+      #     format: "MQTT Connected."
+      # - lambda: |-
+      #     id(check_printago_status).execute(id(printer_id).state, id(api_key_text).state, id(username_text).state);
 binary_sensor:
 - platform: template
   name: "MQTT Connection"
@@ -36,58 +42,15 @@ text:
   mode: text
   restore_value: true
   optimistic: true
-  on_value:
-    then:
-    - lambda: |-
-        id(mqtt_client_id).set_broker_address(x.c_str());
-        if (!id(mqtt_endpoint_text).state.empty() && !id(printer_id_text).state.empty() && !id(user_id_text).state.empty()) {
-          id(mqtt_client_id).enable();
-          id(mqtt_client_id).subscribe(
-            "stores/" + id(user_id_text).state + "/printer-stats/" + id(printer_id_text).state,
-            [](const std::string &topic, const std::string &payload) {
-              id(last_mqtt_message).publish_state(payload);
-            }
-          );
-        }
-- platform: template
-  name: "Printer ID"
-  id: printer_id_text
-  mode: text
-  restore_value: true
-  optimistic: true
-  on_value:
-    then:
-    - lambda: |-
-        if (!id(mqtt_endpoint_text).state.empty() && !id(printer_id_text).state.empty() && !id(user_id_text).state.empty()) {
-          id(mqtt_client_id).enable();
-          id(mqtt_client_id).subscribe(
-            "stores/" + id(user_id_text).state + "/printer-stats/" + id(printer_id_text).state,
-            [](const std::string &topic, const std::string &payload) {
-              id(last_mqtt_message).publish_state(payload);
-            }
-          );
-        }
-- platform: template
-  name: "User ID"
-  id: user_id_text
-  mode: text
-  restore_value: true
-  optimistic: true
-  on_value:
-    then:
-    - lambda: |-
-        if (!id(mqtt_endpoint_text).state.empty() && !id(printer_id_text).state.empty() && !id(user_id_text).state.empty()) {
-          id(mqtt_client_id).enable();
-          id(mqtt_client_id).subscribe(
-            "stores/" + id(user_id_text).state + "/printer-stats/" + id(printer_id_text).state,
-            [](const std::string &topic, const std::string &payload) {
-              id(last_mqtt_message).publish_state(payload);
-            }
-          );
-        }
+  state_topic:
+
+
 - platform: template
   name: "Last MQTT Message"
   id: last_mqtt_message
   mode: text
   restore_value: false
   optimistic: true
+  state_topic:
+
+

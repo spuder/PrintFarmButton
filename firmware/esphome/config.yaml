@@ -8,11 +8,8 @@ esphome:
 
 esp32:
   board: esp32-s3-devkitc-1
-  framework:
-    type: esp-idf
-    # version: latest
-    # advanced:
-    #   ignore_efuse_custom_mac: true
+  # framework:
+  # type: esp-idf
 
 packages:
   #hardware: !include config.d/hardware.yaml
@@ -21,18 +18,26 @@ packages:
   mqtt: !include conf.d/mqtt.yaml
   button: !include conf.d/button.yaml
   wifi: !include conf.d/wifi.yaml
+  printago: !include conf.d/printago.yaml
 
-logger: # api: #can not have mqtt and api at the same time
+logger:
+  # level: VERBOSE
+  # logs:
+  #   mqtt.component: VERBOSE
+  #   mqtt.client: VERBOSE
+  #   mqtt: VERBOSE
 
-ota:
-  platform: esphome
+  # api: #can not have mqtt and api at the same time
 
-esp32_improv:
-  authorizer: none
+  # ota:
+  #   platform: esphome
 
-# improv_serial:
+  # esp32_improv:
+  #   authorizer: none
 
-# substitutions:
-#   board_type: esp32dev
-#   rgb_led_pin: '4'
-#   # mac_suffix: 'XXXX'
+  # improv_serial:
+
+  # substitutions:
+  #   board_type: esp32dev
+  #   rgb_led_pin: '4'
+  #   # mac_suffix: 'XXXX'
