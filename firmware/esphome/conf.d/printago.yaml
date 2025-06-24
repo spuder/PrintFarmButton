@@ -46,14 +46,6 @@ binary_sensor:
   icon: "mdi:lan-connect"
 
 text_sensor:
-- platform: template
-  name: "Printer State"
-  id: printer_state_sensor
-  lambda: |-
-    return id(state_string);
-  icon: "mdi:printer-3d"
-  state_topic:
-
 
 - platform: template
   name: "Combined Printer Status"
@@ -72,7 +64,8 @@ text_sensor:
   icon: "mdi:information"
   update_interval: 5s
   state_topic:
-
+  web_server:
+    sorting_group_id: diagnostic
 
 script:
 - id: check_printago_status
@@ -151,30 +144,50 @@ script:
       - if:
           condition:
             and:
+            - lambda: 'return id(printer_is_online);'
             - lambda: 'return id(printer_confirmed_ready);'
             - lambda: 'return id(printer_is_available);'
           then:
+          # Blue (Ready)
           - light.turn_on:
               id: openqueue_rgb
-              red: 0.5
+              red: 0.0
               green: 0.0
-              blue: 0.5
+              blue: 1.0
           else:
           - if:
               condition:
-                lambda: 'return id(printer_confirmed_ready);'
+                and:
+                - lambda: 'return id(printer_is_online);'
+                - lambda: 'return !id(printer_confirmed_ready);'
+                - lambda: 'return id(printer_is_available);'
               then:
               - light.turn_on:
                   id: openqueue_rgb
-                  red: 1.0
+                  red: 0.5
                   green: 0.0
-                  blue: 0.0
+                  blue: 0.5
               else:
-              - light.turn_on:
-                  id: openqueue_rgb
-                  red: 0.0
-                  green: 1.0
-                  blue: 0.0
+              - if:
+                  condition:
+                    and:
+                    - lambda: 'return id(printer_is_online);'
+                    - lambda: 'return !id(printer_is_available);'
+                    - lambda: 'return !id(printer_confirmed_ready);'
+                  then:
+                  # Green (Busy)
+                  - light.turn_on:
+                      id: openqueue_rgb
+                      red: 0.0
+                      green: 1.0
+                      blue: 0.0
+                  else:
+                  # Fallback/default
+                  - light.turn_on:
+                      id: openqueue_rgb
+                      red: 1.0
+                      green: 1.0
+                      blue: 1.0
 
 text:
 - platform: template
@@ -184,7 +197,8 @@ text:
   restore_value: true
   optimistic: true
   state_topic:
-
+  web_server:
+    sorting_group_id: printago
 
 - platform: template
   name: "Username"
@@ -193,6 +207,8 @@ text:
   restore_value: true
   optimistic: true
   state_topic:
+  web_server:
+    sorting_group_id: printago
   on_value:
     then:
     - lambda: |-
@@ -232,6 +248,8 @@ text:
   restore_value: true
   optimistic: true
   state_topic:
+  web_server:
+    sorting_group_id: printago
   on_value:
     then:
     - lambda: |-
@@ -286,9 +304,11 @@ text:
         }
 
 button:
-  - platform: template
-    name: "Check Printago Status"
-    id: check_printago_status_button
-    icon: "mdi:cloud-refresh"
-    on_press:
-      - script.execute: check_printago_status
+- platform: template
+  name: "Check Printago Status"
+  id: check_printago_status_button
+  icon: "mdi:cloud-refresh"
+  on_press:
+  - script.execute: check_printago_status
+  web_server:
+    sorting_group_id: diagnostic

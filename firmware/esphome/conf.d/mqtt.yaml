@@ -43,7 +43,8 @@ text:
   restore_value: true
   optimistic: true
   state_topic:
-
+  web_server:
+    sorting_group_id: printago
 
 - platform: template
   name: "Last MQTT Message"
@@ -52,5 +53,5 @@ text:
   restore_value: false
   optimistic: true
   state_topic:
-
-
+  web_server:
+    sorting_group_id: diagnostic

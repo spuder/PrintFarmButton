@@ -2,4 +2,27 @@
 web_server:
   port: 80
   version: 3
-  include_internal: true
+  include_internal: false
+  sorting_groups:
+  - id: printago
+    name: Printago
+  - id: diagnostic
+    name: Diagnostic
+
+# To assign entities to groups, add the following to each entity definition (not in web_server):
+# web_server:
+#   sorting_group_id: printago
+#
+# Example:
+# text:
+#   - id: api_key_text
+#     ...
+#     web_server:
+#       sorting_group_id: printago
+# text_sensor:
+#   - id: printer_state_sensor
+#     ...
+#     web_server:
+#       sorting_group_id: diagnostic
+#
+# Remove any 'entities' key from sorting_groups. Group assignment is per-entity, not in web_server.yaml.
