@@ -32,24 +32,6 @@ binary_sensor:
     - script.execute: update_led_color
   internal: false
 
-text_sensor:
-- platform: template
-  name: "Combined Printer Status"
-  id: combined_status_sensor
-  lambda: |-
-    std::string status = "API: ";
-    status += id(printer_confirmed_ready_sensor).state ? "Ready" : "Not Ready";
-    status += ", ";
-    status += id(printer_is_available_sensor).state ? "Available" : "Unavailable";
-    status += ", ";
-    status += id(printer_is_online_sensor).state ? "Online" : "Offline";
-    return status;
-  icon: "mdi:information"
-  update_interval: 5s
-  state_topic:
-  web_server:
-    sorting_group_id: diagnostic
-
 script:
 - id: check_printago_status
   mode: queued
@@ -255,8 +237,10 @@ text:
         // Unsubscribe from previous topic first
         if (!previous_printer_id.empty() && !id(username_text).state.empty()) {
           std::string old_topic = "stores/" + id(username_text).state + "/printer-stats/" + previous_printer_id;
+          std::string alt_old_topic = "stores/" + id(username_text).state + "/entities/printers/" + previous_printer_id;
           ESP_LOGI("mqtt", "Unsubscribing from previous topic: %s", old_topic.c_str());
           id(mqtt_client_id).unsubscribe(old_topic);
+          id(mqtt_client_id).unsubscribe(alt_old_topic);
         }
 
         // Store the new value as the "previous" for next time
@@ -266,21 +250,25 @@ text:
         if (!new_printer_id.empty() && !id(username_text).state.empty()) {
           std::string topic = "stores/" + id(username_text).state + "/printer-stats/" + new_printer_id;
           ESP_LOGI("mqtt", "Subscribing to new topic: %s", topic.c_str());
-          
           id(mqtt_client_id).subscribe_json(topic, [=](const std::string &topic, JsonObject root) {
             ESP_LOGI("mqtt", "Received JSON on topic %s", topic.c_str());
-            
             bool is_online = root.containsKey("isOnline") ? root["isOnline"] : false;
-            std::string state = root.containsKey("state") ? root["state"].as<std::string>() : "";
             bool is_available = root.containsKey("isAvailable") ? root["isAvailable"] : false;
-            ESP_LOGI("mqtt", "Parsed isOnline: %s, state: %s, isAvailable: %s", is_online ? "true" : "false", state.c_str(), is_available ? "true" : "false");
-            
-            // Store a summary instead of full JSON to avoid storage issues
-            std::string summary = "Online:" + std::string(is_online ? "true" : "false") + 
-                                 " State:" + state + 
-                                 " Available:" + std::string(is_available ? "true" : "false");
+            // Only update the relevant sensors from this topic
+            id(printer_is_online_sensor).publish_state(is_online);
+            id(printer_is_available_sensor).publish_state(is_available);
+            ESP_LOGI("mqtt", "Parsed isOnline: %s, isAvailable: %s", is_online ? "true" : "false", is_available ? "true" : "false");
+            std::string summary = "Online:" + std::string(is_online ? "true" : "false") + " Available:" + std::string(is_available ? "true" : "false");
             id(last_mqtt_message).publish_state(summary);
-
+          });
+          // Additional subscription to stores/$USERNAME/entities/printers/$PRINTER for confirmedReady
+          std::string alt_topic = "stores/" + id(username_text).state + "/entities/printers/" + new_printer_id;
+          ESP_LOGI("mqtt", "Subscribing to alternate topic: %s", alt_topic.c_str());
+          id(mqtt_client_id).subscribe_json(alt_topic, [=](const std::string &topic, JsonObject root) {
+            ESP_LOGI("mqtt", "[ALT] Received JSON on topic %s", topic.c_str());
+            bool confirmed_ready = root.containsKey("confirmedReady") ? root["confirmedReady"] : false;
+            id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
+            ESP_LOGI("mqtt", "Parsed confirmedReady: %s", confirmed_ready ? "true" : "false");
           });
         }
 

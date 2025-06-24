@@ -1,7 +1,7 @@
 mqtt:
   id: mqtt_client_id
   # broker: ""
-  broker: "192.168.81.154"
+  broker: "192.168.81.154" #TODO: Set this dynamically
   client_id: ""
   port: 1883
   username: ""
@@ -25,8 +25,7 @@ mqtt:
       # on_connect:
       # - logger.log:
       #     format: "MQTT Connected."
-      # - lambda: |-
-      #     id(check_printago_status).execute(id(printer_id).state, id(api_key_text).state, id(username_text).state);
+
 binary_sensor:
 - platform: template
   name: "MQTT Connection"

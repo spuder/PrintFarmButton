@@ -32,3 +32,13 @@ Updates for printers, e.g. when transitioning from idle to ready
 `stores/$USERNAME/entities/printers/$PRINTER`
 
 `stores/$USERNAME$/entities/printers/#`
+
+
+Gets basic information about printer
+`stores/$USERNAME/printer-stats/$PRINTER`
+
+
+The Rest api provides all 3 entities
+
+Whereas the MQTT `printer-stats/` provides `isOnline` and `isAvailable`, but only `entities/printers` provides `confirmedReady`. 
+Furthermore `entities/printers` does not have retain enabled on the messages, so unless you are activly watching, you won't be able to get that state. 
