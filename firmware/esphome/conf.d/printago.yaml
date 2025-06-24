@@ -1,28 +1,3 @@
-# Global variables to store printer status (not persisted across reboots)
-globals:
-# Values returned by API
-- id: printer_confirmed_ready
-  type: bool
-  restore_value: false
-  initial_value: 'false'
-
-- id: printer_is_available
-  type: bool
-  restore_value: false
-  initial_value: 'false'
-
-- id: printer_is_online
-  type: bool
-  restore_value: false
-  initial_value: 'false'
-
-# Values returned by MQTT
-- id: state_string
-  type: std::string
-  restore_value: false
-  initial_value: ''
-
-# Sensors to display global values in web UI
 binary_sensor:
 - platform: template
   name: "Printer Confirmed Ready"
@@ -58,20 +33,16 @@ binary_sensor:
   internal: false
 
 text_sensor:
-
 - platform: template
   name: "Combined Printer Status"
   id: combined_status_sensor
   lambda: |-
     std::string status = "API: ";
-    status += id(printer_confirmed_ready) ? "Ready" : "Not Ready";
+    status += id(printer_confirmed_ready_sensor).state ? "Ready" : "Not Ready";
     status += ", ";
-    status += id(printer_is_available) ? "Available" : "Unavailable";
+    status += id(printer_is_available_sensor).state ? "Available" : "Unavailable";
     status += ", ";
-    status += id(printer_is_online) ? "Online" : "Offline";
-    if (!id(state_string).empty()) {
-      status += " | MQTT State: " + id(state_string);
-    }
+    status += id(printer_is_online_sensor).state ? "Online" : "Offline";
     return status;
   icon: "mdi:information"
   update_interval: 5s
@@ -115,12 +86,9 @@ script:
                   bool confirmed_ready = doc["confirmedReady"] | false;
                   bool is_available = doc["isAvailable"] | false;
                   bool is_online = doc["isOnline"] | false;
-                  std::string state = doc["metadata"]["print_status"] | "";
-                  id(printer_confirmed_ready) = confirmed_ready;
-                  id(printer_is_available) = is_available;
-                  id(printer_is_online) = is_online;
-                  id(state_string) = state;
-                  ESP_LOGI("printago", "Updated state_string: %s", state.c_str());
+                  id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
+                  id(printer_is_available_sensor).publish_state(is_available);
+                  id(printer_is_online_sensor).publish_state(is_online);
                 } else {
                   ESP_LOGW("printago", "HTTP error %d", response->status_code);
                 }
@@ -133,9 +101,9 @@ script:
   then:
   - lambda: |-
       // Clear all global printer status variables
-      id(printer_confirmed_ready) = false;
-      id(printer_is_available) = false;
-      id(printer_is_online) = false;
+      id(printer_confirmed_ready_sensor).publish_state(false);
+      id(printer_is_available_sensor).publish_state(false);
+      id(printer_is_online_sensor).publish_state(false);
 
       ESP_LOGI("printago", "Cleared all printer status globals - all set to false");
 
@@ -145,7 +113,7 @@ script:
   - if:
       condition:
         not:
-        - lambda: 'return id(printer_is_online);'
+        - lambda: 'return id(printer_is_online_sensor).state;'
       then:
       - light.turn_on:
           id: openqueue_rgb
@@ -156,9 +124,9 @@ script:
       - if:
           condition:
             and:
-            - lambda: 'return id(printer_is_online);'
-            - lambda: 'return id(printer_confirmed_ready);'
-            - lambda: 'return id(printer_is_available);'
+            - lambda: 'return id(printer_is_online_sensor).state;'
+            - lambda: 'return id(printer_confirmed_ready_sensor).state;'
+            - lambda: 'return id(printer_is_available_sensor).state;'
           then:
           # Blue (Ready)
           - light.turn_on:
@@ -170,10 +138,11 @@ script:
           - if:
               condition:
                 and:
-                - lambda: 'return id(printer_is_online);'
-                - lambda: 'return !id(printer_confirmed_ready);'
-                - lambda: 'return id(printer_is_available);'
+                - lambda: 'return id(printer_is_online_sensor).state;'
+                - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                - lambda: 'return id(printer_is_available_sensor).state;'
               then:
+              # Purple (Set Ready)
               - light.turn_on:
                   id: openqueue_rgb
                   red: 0.5
@@ -183,9 +152,9 @@ script:
               - if:
                   condition:
                     and:
-                    - lambda: 'return id(printer_is_online);'
-                    - lambda: 'return !id(printer_is_available);'
-                    - lambda: 'return !id(printer_confirmed_ready);'
+                    - lambda: 'return id(printer_is_online_sensor).state;'
+                    - lambda: 'return !id(printer_is_available_sensor).state;'
+                    - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
                   then:
                   # Green (Busy)
                   - light.turn_on:
