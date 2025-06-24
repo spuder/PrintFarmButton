@@ -1,4 +1,4 @@
-# OpenQueue
+# OpenQueueButton
 
 <p align="center">
   <img src="images/logo.png" alt="OpenQueue Logo" width="200"/>
@@ -31,24 +31,44 @@ Once you've joined it to your wifi, navigate to `http://openqueue.local` or find
 
 ## Hardware
 
-Requires an esp32 and RGB Leds, and a 3d printer of course
+### Required Components
+- ESP32-S3-Zero board
+- RGB LED connected to GPIO1
+- Physical button connected to GPIO2
+- 3D printed enclosure (see `/hardware` folder for STL files)
 
-## Sofware
+### Wiring
+1. Connect the RGB LED:
+   - Data pin to GPIO1 on the ESP32-S3-Zero
+   - Power pin to 5V
+   - Ground pin to GND
+2. Connect the physical button between GPIO2 and GND on the ESP32-S3-Zero
+   - One terminal of the button connects to GPIO2
+   - The other terminal connects to GND
+3. Power the ESP32-S3-Zero via USB or an external 5V power supply
 
-## LED Color States
+### Pinout Reference
+| Component      | ESP32-S3-Zero Pin |
+|----------------|-------------------|
+| RGB LED data   | GPIO1             |
+| RGB LED power  | 5V                |
+| RGB LED ground | GND               |
+| Button         | GPIO2 and GND     |
 
-The RGB LED indicates printer status as follows:
+### Wiring Diagram
 
-| Color   | Meaning                                      | Condition                                                                 |
-|---------|----------------------------------------------|--------------------------------------------------------------------------|
-| White   | Offline / Not connected                     | `isOnline == false`                                                      |
-| Green   | Printing                                    | `isOnline == true && state == "RUNNING"`                                |
-| Purple  | Idle (finished & available)                 | `isOnline == true && (state == "FINISH" or "FINISHED") && isAvailable == true` |
-| Red     | Finished, not cleared (not available)       | `isOnline == true && (state == "FINISH" or "FINISHED") && isAvailable == false` |
-| Off     | Unknown/other state                         | Any other state                                                          |
-
-- `isOnline`, `state`, and `isAvailable` are fields in the MQTT JSON payload.
-- Colors are set automatically based on the most recent MQTT message.
-
----
-
+```
+                ESP32-S3-Zero
+             +----------------+
+        |----+ 5v             |
+        |----+ GND            |
+        |    |                |
+RGB LED -----+ GPIO1          |
+             |                |
+Button  -----+ GPIO2          |
+    |        |                |
+    |        |                |
+    +--------+ GND            |
+             |                |
+             +----------------+
+```
