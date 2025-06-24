@@ -72,3 +72,12 @@ Button  -----+ GPIO2          |
              |                |
              +----------------+
 ```
+
+## Firmware
+
+To flash, ensure you have the `esphome` cli installed (`brew install esphome`)
+
+```bash
+cd firmware/esphome
+esphome run config.yaml
+```
