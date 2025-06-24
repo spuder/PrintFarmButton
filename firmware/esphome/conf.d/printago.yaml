@@ -151,6 +151,42 @@ script:
                       red: 1.0
                       green: 1.0
                       blue: 1.0
+- id: mark_printer_ready
+  mode: queued
+  then:
+  - if:
+      condition:
+        and:
+        - lambda: 'return !id(printer_id).state.empty();'
+        - lambda: 'return !id(api_key_text).state.empty();'
+        - lambda: 'return !id(username_text).state.empty();'
+      then:
+      - http_request.send:
+          method: PATCH
+          url: !lambda |-
+            return "https://api.printago.io/v1/printers/confirm-ready";
+          request_headers:
+            authorization: !lambda |-
+              return ("ApiKey " + id(api_key_text).state).c_str();
+            x-printago-storeid: !lambda |-
+              return id(username_text).state.c_str();
+            content-type: application/json
+          body: !lambda |-
+            return std::string("{\"ready\": true, \"ids\": [\"") + id(printer_id).state + "\"]}";
+          capture_response: true
+          max_response_buffer_size: 2048
+          on_response:
+            then:
+            - lambda: |-
+                ESP_LOGI("printago", "Mark printer ready response: %d", response->status_code);
+                if (response->status_code == 200) {
+                  ESP_LOGI("printago", "Printer marked as ready");
+                } else {
+                  ESP_LOGW("printago", "Failed to mark printer as ready");
+                }
+      else:
+      - lambda: |-
+          ESP_LOGW("printago", "Not running mark_printer_ready: printer_id, api_key_text, or username_text is missing");
 
 text:
 - platform: template

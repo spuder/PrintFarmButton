@@ -3,14 +3,6 @@ http_request:
   id: http_request_data
   verify_ssl: false
 
-# button:
-# - platform: template
-#   name: "Confirm Printer Ready"
-#   id: confirm_ready_button
-#   on_press:
-#   # - lambda: |-
-#   #     id(check_printago_status).execute();
-
 binary_sensor:
 - platform: gpio
   name: "Physical Confirm Printer Ready"
@@ -19,6 +11,9 @@ binary_sensor:
     number: 2
     mode: INPUT_PULLUP
     inverted: true
-    # on_press:
-    # - lambda: |-
-    #     id(check_printago_status).execute();
+  filters:
+  - delayed_on: 100ms
+  - delayed_off: 100ms
+  on_press:
+    then:
+    - script.execute: mark_printer_ready
