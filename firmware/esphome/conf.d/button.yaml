@@ -7,6 +7,7 @@ binary_sensor:
 - platform: gpio
   name: "Physical Confirm Printer Ready"
   id: confirm_ready_gpio
+  internal: true
   pin:
     number: 2
     mode: INPUT_PULLUP

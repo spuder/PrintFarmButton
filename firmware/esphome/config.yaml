@@ -6,13 +6,17 @@ esphome:
   # platformio_options:
   #   board: ${board_type}
 
+  on_boot:
+    priority: 800.0
+    then:
+    - script.execute: check_printago_status
+
 esp32:
   board: esp32-s3-devkitc-1
   # framework:
   # type: esp-idf
 
 packages:
-  #hardware: !include config.d/hardware.yaml
   led: !include conf.d/led.yaml
   web_server: !include conf.d/web_server.yaml
   mqtt: !include conf.d/mqtt.yaml
