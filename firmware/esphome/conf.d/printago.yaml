@@ -102,6 +102,7 @@ script:
           red: 1.0
           green: 1.0
           blue: 1.0
+          effect: none
       else:
       - if:
           condition:
@@ -116,6 +117,7 @@ script:
               red: 0.0
               green: 0.0
               blue: 1.0
+              effect: none
           else:
           - if:
               condition:
@@ -124,12 +126,13 @@ script:
                 - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
                 - lambda: 'return id(printer_is_available_sensor).state;'
               then:
-              # Purple (Set Ready)
+              # Magenta (Set Ready)
               - light.turn_on:
                   id: openqueue_rgb
-                  red: 0.5
+                  red: 0.9
                   green: 0.0
-                  blue: 0.5
+                  blue: 0.7
+                  effect: Pulse
               else:
               - if:
                   condition:
@@ -144,6 +147,7 @@ script:
                       red: 0.0
                       green: 1.0
                       blue: 0.0
+                      effect: none
                   else:
                   # Fallback/default
                   - light.turn_on:
@@ -151,6 +155,7 @@ script:
                       red: 1.0
                       green: 1.0
                       blue: 1.0
+                      effect: none
 - id: mark_printer_ready
   mode: queued
   then:
@@ -286,26 +291,36 @@ text:
         if (!new_printer_id.empty() && !id(username_text).state.empty() && !id(mqtt_endpoint_text).state.empty()) {
           std::string topic = "stores/" + id(username_text).state + "/printer-stats/" + new_printer_id;
           ESP_LOGI("mqtt", "Subscribing to new topic: %s", topic.c_str());
-          id(mqtt_client_id).subscribe_json(topic, [](const std::string &topic, JsonObject root) {
-            ESP_LOGI("mqtt", "Received JSON on topic %s", topic.c_str());
+          
+          // Capture new_printer_id by value in the lambda
+          id(mqtt_client_id).subscribe_json(topic, [new_printer_id](const std::string &topic, JsonObject root) {
+            ESP_LOGD("mqtt", "Received JSON on topic %s", topic.c_str());
             bool is_online = root.containsKey("isOnline") ? root["isOnline"] : false;
             bool is_available = root.containsKey("isAvailable") ? root["isAvailable"] : false;
             // Only update the relevant sensors from this topic
             id(printer_is_online_sensor).publish_state(is_online);
             id(printer_is_available_sensor).publish_state(is_available);
-            ESP_LOGI("mqtt", "Parsed isOnline: %s, isAvailable: %s", is_online ? "true" : "false", is_available ? "true" : "false");
-            std::string summary = "Online:" + std::string(is_online ? "true" : "false") + " Available:" + std::string(is_available ? "true" : "false");
-            id(last_mqtt_message).publish_state(summary);
+            ESP_LOGD("mqtt", "Parsed isOnline: %s, isAvailable: %s", is_online ? "true" : "false", is_available ? "true" : "false");
           });
           
-          // Additional subscription to stores/$USERNAME/entities/printers/$PRINTER for confirmedReady
-          std::string alt_topic = "stores/" + id(username_text).state + "/entities/printers/" + new_printer_id;
-          ESP_LOGI("mqtt", "Subscribing to alternate topic: %s", alt_topic.c_str());
-          id(mqtt_client_id).subscribe_json(alt_topic, [](const std::string &topic, JsonObject root) {
-            ESP_LOGI("mqtt", "[ALT] Received JSON on topic %s", topic.c_str());
-            bool confirmed_ready = root.containsKey("confirmedReady") ? root["confirmedReady"] : false;
-            id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
-            ESP_LOGI("mqtt", "Parsed confirmedReady: %s", confirmed_ready ? "true" : "false");
+          // Additional subscription to stores/$USERNAME/entities/printers for confirmedReady
+          std::string entities_topic = "stores/" + id(username_text).state + "/entities/printers";
+          ESP_LOGI("mqtt", "Subscribing to entities topic: %s", entities_topic.c_str());
+          
+          // Capture new_printer_id by value in this lambda too
+          id(mqtt_client_id).subscribe_json(entities_topic, [new_printer_id](const std::string &topic, JsonObject root) {
+            // Parse for entities.<printer_id>.confirmedReady
+            if (root.containsKey("entities")) {
+              JsonObject entities = root["entities"];
+              if (entities.containsKey(new_printer_id.c_str())) {
+                JsonObject printer_obj = entities[new_printer_id.c_str()];
+                if (printer_obj.containsKey("confirmedReady")) {
+                  bool confirmed_ready = printer_obj["confirmedReady"];
+                  id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
+                  ESP_LOGI("mqtt", "Parsed entities.%s.confirmedReady: %s", new_printer_id.c_str(), confirmed_ready ? "true" : "false");
+                }
+              }
+            }
           });
         }
 

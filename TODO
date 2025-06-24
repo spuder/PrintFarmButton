@@ -1,9 +1,10 @@
 [x] Make the mqtt url a variable
 [ ] Display mqtt vars in web interface
-[ ] Troubleshoot why color doesn't change to blue
-[ ] Throb purple when waiting
+[x] Troubleshoot why color doesn't change to blue
+[x] Throb purple when waiting
 [ ] Throb green when paused
 [ ] Support yellow
 [ ] Test white/grey
-[ ] esp32 can't subscribe to wildcard `/entities/printers/`, and need wildcard to get confirmedReady
+[x] esp32 can't subscribe to wildcard `/entities/printers/`, and need wildcard to get confirmedReady
 [ ] all mqtt text boxes should have on_value that checks if values are set, and if they are subscribe to mqtt
+[x] ON mqtt disconnect, turn off led

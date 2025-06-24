@@ -25,6 +25,9 @@ mqtt:
       # on_connect:
       # - logger.log:
       #     format: "MQTT Connected."
+  on_disconnect:
+    then:
+    - light.turn_off: openqueue_rgb
 
 binary_sensor:
 - platform: template
@@ -52,13 +55,3 @@ text:
     - lambda: |-
         ESP_LOGI("mqtt", "MQTT Endpoint changed to: %s", x.c_str());
         id(mqtt_client_id).set_broker_address(x.c_str());
-
-- platform: template
-  name: "Last MQTT Message"
-  id: last_mqtt_message
-  mode: text
-  restore_value: false
-  optimistic: true
-  state_topic:
-  web_server:
-    sorting_group_id: diagnostic
