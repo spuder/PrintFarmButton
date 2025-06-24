@@ -5,10 +5,12 @@ globals:
   type: bool
   restore_value: false
   initial_value: 'false'
+
 - id: printer_is_available
   type: bool
   restore_value: false
   initial_value: 'false'
+
 - id: printer_is_online
   type: bool
   restore_value: false
@@ -76,54 +78,50 @@ script:
 - id: check_printago_status
   mode: queued
   then:
-  - http_request.get:
-      url: !lambda |-
-        return "https://api.printago.io/v1/printers/" + id(printer_id).state;
-      request_headers:
-        authorization: !lambda |-
-          return (std::string("ApiKey ") + id(api_key_text).state).c_str();
-        x-printago-storeid: !lambda |-
-          return id(username_text).state.c_str();
-      capture_response: true
-      max_response_buffer_size: 2048
-      on_response:
-        then:
-        - lambda: |-
-            ESP_LOGI("printago", "HTTP Response code: %d", response->status_code);
-            ESP_LOGI("printago", "Response body length: %d bytes", body.length());
-
-            if (response->status_code == 200) {
-              // Parse JSON response - increased buffer size for larger responses
-              DynamicJsonDocument doc(2048);
-              DeserializationError error = deserializeJson(doc, body);
-              
-              if (error) {
-                ESP_LOGW("printago", "Failed to parse JSON: %s", error.c_str());
-                return;
-              }
-              
-              // Extract the three fields and save to globals
-              bool confirmed_ready = doc.containsKey("confirmedReady") ? doc["confirmedReady"] : false;
-              bool is_available = doc.containsKey("isAvailable") ? doc["isAvailable"] : false;
-              bool is_online = doc.containsKey("isOnline") ? doc["isOnline"] : false;
-              std::string state = doc.containsKey("metadata") ? doc["metadata"]["print_status"].as<std::string>() : "";
-              
-              // Update global variables
-              id(printer_confirmed_ready) = confirmed_ready;
-              id(printer_is_available) = is_available;
-              id(printer_is_online) = is_online;
-              id(state_string) = state;
-              
-              ESP_LOGI("printago", "Success! Printer status - confirmedReady: %s, isAvailable: %s, isOnline: %s", 
-                      confirmed_ready ? "true" : "false", 
-                      is_available ? "true" : "false", 
-                      is_online ? "true" : "false");
-            } else if (response->status_code == 401) {
-              ESP_LOGW("printago", "401 Unauthorized - check API key and store ID");
-              ESP_LOGW("printago", "Response: %s", body.c_str());
-            } else {
-              ESP_LOGW("printago", "HTTP error %d: %s", response->status_code, body.c_str());
-            }
+  - if:
+      condition:
+        and:
+        - lambda: 'return !id(printer_id).state.empty();'
+        - lambda: 'return !id(api_key_text).state.empty();'
+        - lambda: 'return !id(username_text).state.empty();'
+      then:
+      - http_request.get:
+          url: !lambda |-
+            return "https://api.printago.io/v1/printers/" + id(printer_id).state;
+          request_headers:
+            authorization: !lambda |-
+              return ("ApiKey " + id(api_key_text).state).c_str();
+            x-printago-storeid: !lambda |-
+              return id(username_text).state.c_str();
+          capture_response: true
+          max_response_buffer_size: 2048
+          on_response:
+            then:
+            - lambda: |-
+                ESP_LOGI("printago", "HTTP Response code: %d", response->status_code);
+                ESP_LOGI("printago", "Response body length: %d bytes", body.length());
+                if (response->status_code == 200) {
+                  DynamicJsonDocument doc(2048);
+                  DeserializationError error = deserializeJson(doc, body);
+                  if (error) {
+                    ESP_LOGW("printago", "Failed to parse JSON: %s", error.c_str());
+                    return;
+                  }
+                  bool confirmed_ready = doc["confirmedReady"] | false;
+                  bool is_available = doc["isAvailable"] | false;
+                  bool is_online = doc["isOnline"] | false;
+                  std::string state = doc["metadata"]["print_status"] | "";
+                  id(printer_confirmed_ready) = confirmed_ready;
+                  id(printer_is_available) = is_available;
+                  id(printer_is_online) = is_online;
+                  id(state_string) = state;
+                  ESP_LOGI("printago", "Updated state_string: %s", state.c_str());
+                } else {
+                  ESP_LOGW("printago", "HTTP error %d", response->status_code);
+                }
+      else:
+      - lambda: |-
+          ESP_LOGW("printago", "Not running check_printago_status: printer_id, api_key_text, or username_text is missing");
 
 - id: clear_printago_status
   mode: queued
@@ -135,6 +133,48 @@ script:
       id(printer_is_online) = false;
 
       ESP_LOGI("printago", "Cleared all printer status globals - all set to false");
+
+- id: update_led_color
+  mode: queued
+  then:
+  - if:
+      condition:
+        not:
+        - lambda: 'return id(printer_is_online);'
+      then:
+      - light.turn_on:
+          id: openqueue_rgb
+          red: 1.0
+          green: 1.0
+          blue: 1.0
+      else:
+      - if:
+          condition:
+            and:
+            - lambda: 'return id(printer_confirmed_ready);'
+            - lambda: 'return id(printer_is_available);'
+          then:
+          - light.turn_on:
+              id: openqueue_rgb
+              red: 0.5
+              green: 0.0
+              blue: 0.5
+          else:
+          - if:
+              condition:
+                lambda: 'return id(printer_confirmed_ready);'
+              then:
+              - light.turn_on:
+                  id: openqueue_rgb
+                  red: 1.0
+                  green: 0.0
+                  blue: 0.0
+              else:
+              - light.turn_on:
+                  id: openqueue_rgb
+                  red: 0.0
+                  green: 1.0
+                  blue: 0.0
 
 text:
 - platform: template
@@ -210,7 +250,7 @@ text:
           ESP_LOGI("mqtt", "Username or printer ID missing, disabling MQTT");
           id(clear_printago_status).execute();
           id(mqtt_client_id).disable();
-          return;  // Don't proceed with subscription logic if MQTT is disabled
+          return;
         }
 
         // Unsubscribe from previous topic first
@@ -231,11 +271,6 @@ text:
           id(mqtt_client_id).subscribe_json(topic, [=](const std::string &topic, JsonObject root) {
             ESP_LOGI("mqtt", "Received JSON on topic %s", topic.c_str());
             
-            ESP_LOGI("mqtt", "Root JSON keys:");
-            for (JsonPair kv : root) {
-              ESP_LOGI("mqtt", "  key: %s", kv.key().c_str());
-            }
-            
             bool is_online = root.containsKey("isOnline") ? root["isOnline"] : false;
             std::string state = root.containsKey("state") ? root["state"].as<std::string>() : "";
             bool is_available = root.containsKey("isAvailable") ? root["isAvailable"] : false;
@@ -246,22 +281,14 @@ text:
                                  " State:" + state + 
                                  " Available:" + std::string(is_available ? "true" : "false");
             id(last_mqtt_message).publish_state(summary);
-            
-            if (!is_online) {
-              // White - printer offline
-              id(openqueue_rgb).make_call().set_state(true).set_rgb(1, 1, 1).set_brightness(1.0).perform();
-            } else if (state == "RUNNING") {
-              // Green - printing
-              id(openqueue_rgb).make_call().set_state(true).set_rgb(0, 1, 0).set_brightness(1.0).perform();
-            } else if ((state == "FINISH" || state == "FINISHED") && !is_available) {
-              // Red - finished, not cleared
-              id(openqueue_rgb).make_call().set_state(true).set_rgb(1, 0, 0).set_brightness(1.0).perform();
-            } else if ((state == "FINISH" || state == "FINISHED") && is_available) {
-              // Purple - finished and available (idle)
-              id(openqueue_rgb).make_call().set_state(true).set_rgb(1, 0, 1).set_brightness(1.0).perform();
-            } else {
-              // Off - unknown state
-              id(openqueue_rgb).make_call().set_state(false).perform();
-            }
+
           });
         }
+
+button:
+  - platform: template
+    name: "Check Printago Status"
+    id: check_printago_status_button
+    icon: "mdi:cloud-refresh"
+    on_press:
+      - script.execute: check_printago_status
