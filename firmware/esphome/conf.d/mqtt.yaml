@@ -31,6 +31,8 @@ binary_sensor:
   name: "MQTT Connection"
   id: mqtt_connected
   device_class: connectivity
+  web_server:
+    sorting_group_id: printago
   lambda: |-
     return id(mqtt_client_id)->is_connected();
 
@@ -45,6 +47,11 @@ text:
   web_server:
     sorting_group_id: printago
   initial_value: "mqtt.example.com"
+  on_value:
+    then:
+    - lambda: |-
+        ESP_LOGI("mqtt", "MQTT Endpoint changed to: %s", x.c_str());
+        id(mqtt_client_id).set_broker_address(x.c_str());
 
 - platform: template
   name: "Last MQTT Message"
