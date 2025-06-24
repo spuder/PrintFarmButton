@@ -28,22 +28,34 @@ binary_sensor:
   name: "Printer Confirmed Ready"
   id: printer_confirmed_ready_sensor
   lambda: |-
-    return id(printer_confirmed_ready);
+    return id(printer_confirmed_ready_sensor).state;
   icon: "mdi:printer-check"
+  on_state:
+    then:
+    - script.execute: update_led_color
+  internal: false
 
 - platform: template
   name: "Printer Is Available"
   id: printer_is_available_sensor
   lambda: |-
-    return id(printer_is_available);
+    return id(printer_is_available_sensor).state;
   icon: "mdi:printer"
+  on_state:
+    then:
+    - script.execute: update_led_color
+  internal: false
 
 - platform: template
   name: "Printer Is Online"
   id: printer_is_online_sensor
   lambda: |-
-    return id(printer_is_online);
+    return id(printer_is_online_sensor).state;
   icon: "mdi:lan-connect"
+  on_state:
+    then:
+    - script.execute: update_led_color
+  internal: false
 
 text_sensor:
 
