@@ -1,7 +1,7 @@
 mqtt:
   id: mqtt_client_id
   # broker: ""
-  broker: "192.168.81.154" #TODO: Set this dynamically
+  broker: ""
   client_id: ""
   port: 1883
   username: ""
@@ -44,6 +44,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
+  initial_value: "mqtt.example.com"
 
 - platform: template
   name: "Last MQTT Message"
