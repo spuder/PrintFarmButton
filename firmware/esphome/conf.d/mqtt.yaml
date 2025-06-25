@@ -36,6 +36,7 @@ binary_sensor:
   device_class: connectivity
   web_server:
     sorting_group_id: printago
+    sorting_weight: 7
   lambda: |-
     return id(mqtt_client_id)->is_connected();
 
@@ -49,6 +50,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
+    sorting_weight: 6
   initial_value: "mqtt.example.com"
   on_value:
     then:

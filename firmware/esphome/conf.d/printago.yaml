@@ -69,6 +69,14 @@ script:
                   bool confirmed_ready = doc["confirmedReady"] | false;
                   bool is_available = doc["isAvailable"] | false;
                   bool is_online = doc["isOnline"] | false;
+                  
+                  // Extract and set printer name from metadata if available
+                  if (doc.containsKey("metadata") && doc["metadata"].containsKey("name")) {
+                    const char* name = doc["metadata"]["name"];
+                    id(printer_name).publish_state(name);
+                    ESP_LOGI("printago", "Set printer name to: %s", name);
+                  }
+                  
                   id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
                   id(printer_is_available_sensor).publish_state(is_available);
                   id(printer_is_online_sensor).publish_state(is_online);
@@ -87,6 +95,7 @@ script:
       id(printer_confirmed_ready_sensor).publish_state(false);
       id(printer_is_available_sensor).publish_state(false);
       id(printer_is_online_sensor).publish_state(false);
+      id(printer_name).publish_state("");  // Clear printer name
 
       ESP_LOGI("printago", "Cleared all printer status globals - all set to false");
 
@@ -195,6 +204,16 @@ script:
       - lambda: |-
           ESP_LOGW("printago", "Not running mark_printer_ready: printer_id, api_key_text, or username_text is missing");
 
+text_sensor:
+- platform: template
+  name: "Printer Name"
+  id: printer_name
+  icon: "mdi:printer-3d"
+  state_topic:
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 2
+
 text:
 - platform: template
   name: "Api Key"
@@ -205,6 +224,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
+    sorting_weight: 5
 
 - platform: template
   name: "Username"
@@ -215,6 +235,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
+    sorting_weight: 4
   on_value:
     then:
     - lambda: |-
@@ -256,6 +277,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
+    sorting_weight: 1
   on_value:
     then:
     - lambda: |-
@@ -299,6 +321,14 @@ text:
             ESP_LOGV("mqtt", "Received JSON on topic %s", topic.c_str());
             bool is_online = root.containsKey("isOnline") ? root["isOnline"] : false;
             bool is_available = root.containsKey("isAvailable") ? root["isAvailable"] : false;
+            
+            // Extract and set printer name from metadata if available
+            if (root["metadata"].containsKey("name")) {
+              const char* name = root["name"];
+              id(printer_name).publish_state(name);
+              ESP_LOGV("mqtt", "Set printer name to: %s", name);
+            }
+            
             // Only update the relevant sensors from this topic
             id(printer_is_online_sensor).publish_state(is_online);
             id(printer_is_available_sensor).publish_state(is_available);
@@ -334,4 +364,5 @@ button:
   on_press:
   - script.execute: check_printago_status
   web_server:
-    sorting_group_id: diagnostic
+    sorting_group_id: printago
+    sorting_weight: 4

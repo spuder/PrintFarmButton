@@ -33,9 +33,14 @@ Once you've joined it to your wifi, navigate to `http://openqueue.local` or find
 
 ### Required Components
 - ESP32-S3-Zero board
-- RGB LED connected to GPIO1
+- [RGB LED connected to GPIO1 (5v, 144 Leds per meter)
 - Physical button connected to GPIO2
 - 3D printed enclosure (see `/hardware` folder for STL files)
+
+#### Links
+
+[Esp32-S3-Zero](https://amzn.to/44gplMl)  
+[LED Strip](https://amzn.to/44uVFMB)  
 
 ### Wiring
 1. Connect the RGB LED:
