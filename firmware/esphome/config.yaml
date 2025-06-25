@@ -2,14 +2,7 @@
 esphome:
   name: openqueue
   friendly_name: OpenQueue
-  # name_add_mac_suffix: true
-  # platformio_options:
-  #   board: ${board_type}
-
-  on_boot:
-    priority: 800.0
-    then:
-    - script.execute: check_printago_status
+  name_add_mac_suffix: true
 
 esp32:
   board: esp32-s3-devkitc-1

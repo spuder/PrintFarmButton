@@ -8,7 +8,18 @@ wifi:
   on_connect:
     then:
     - logger.log: "WiFi Connected!"
+    - light.turn_on:
+        id: openqueue_rgb
+        brightness: 1.0
+        red: 1.0
+        green: 1.0
+        blue: 1.0
+        effect: None
+    - script.execute: check_printago_status
   on_disconnect:
     then:
     - logger.log: "WiFi Disconnected! Starting fallback hotspot."
+    - light.turn_off:
+        id: openqueue_rgb
+    # TODO: Set different light pattern when in hotspot mode
 captive_portal:

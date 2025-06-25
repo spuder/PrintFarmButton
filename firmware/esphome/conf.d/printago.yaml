@@ -42,6 +42,7 @@ script:
         - lambda: 'return !id(printer_id).state.empty();'
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
+        - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
       then:
       - http_request.get:
           url: !lambda |-
@@ -165,6 +166,7 @@ script:
         - lambda: 'return !id(printer_id).state.empty();'
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
+        - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
       then:
       - http_request.send:
           method: PATCH
@@ -294,13 +296,13 @@ text:
           
           // Capture new_printer_id by value in the lambda
           id(mqtt_client_id).subscribe_json(topic, [new_printer_id](const std::string &topic, JsonObject root) {
-            ESP_LOGD("mqtt", "Received JSON on topic %s", topic.c_str());
+            ESP_LOGV("mqtt", "Received JSON on topic %s", topic.c_str());
             bool is_online = root.containsKey("isOnline") ? root["isOnline"] : false;
             bool is_available = root.containsKey("isAvailable") ? root["isAvailable"] : false;
             // Only update the relevant sensors from this topic
             id(printer_is_online_sensor).publish_state(is_online);
             id(printer_is_available_sensor).publish_state(is_available);
-            ESP_LOGD("mqtt", "Parsed isOnline: %s, isAvailable: %s", is_online ? "true" : "false", is_available ? "true" : "false");
+            ESP_LOGV("mqtt", "Parsed isOnline: %s, isAvailable: %s", is_online ? "true" : "false", is_available ? "true" : "false");
           });
           
           // Additional subscription to stores/$USERNAME/entities/printers for confirmedReady
@@ -317,7 +319,7 @@ text:
                 if (printer_obj.containsKey("confirmedReady")) {
                   bool confirmed_ready = printer_obj["confirmedReady"];
                   id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
-                  ESP_LOGI("mqtt", "Parsed entities.%s.confirmedReady: %s", new_printer_id.c_str(), confirmed_ready ? "true" : "false");
+                  ESP_LOGV("mqtt", "Parsed entities.%s.confirmedReady: %s", new_printer_id.c_str(), confirmed_ready ? "true" : "false");
                 }
               }
             }
