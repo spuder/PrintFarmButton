@@ -3,6 +3,11 @@ esphome:
   name: openqueue
   friendly_name: OpenQueue
   name_add_mac_suffix: true
+  on_boot:
+    then:
+    - light.turn_on:
+        id: openqueue_rgb
+        effect: rainbow
 
 esp32:
   board: esp32-s3-devkitc-1

@@ -1,5 +1,5 @@
 [x] Make the mqtt url a variable
-[ ] Display mqtt vars in web interface
+[x] Display mqtt vars in web interface
 [x] Troubleshoot why color doesn't change to blue
 [x] Throb purple when waiting
 [ ] Throb green when paused
