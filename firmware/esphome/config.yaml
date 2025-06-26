@@ -31,15 +31,15 @@ logger:
 
   # api: #can not have mqtt and api at the same time
 
-  # ota:
-  #   platform: esphome
+ota:
+  platform: esphome
 
-  # esp32_improv:
-  #   authorizer: none
+# esp32_improv:
+#   authorizer: none
 
-  # improv_serial:
+# improv_serial:
 
-  # substitutions:
-  #   board_type: esp32dev
-  #   rgb_led_pin: '4'
-  #   # mac_suffix: 'XXXX'
+# substitutions:
+#   board_type: esp32dev
+#   rgb_led_pin: '4'
+#   # mac_suffix: 'XXXX'

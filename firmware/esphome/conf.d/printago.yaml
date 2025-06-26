@@ -32,6 +32,28 @@ binary_sensor:
     - script.execute: update_led_color
   internal: false
 
+- platform: template
+  name: "Printer Has Error"
+  id: printer_has_error_sensor
+  lambda: |-
+    return id(printer_has_error_sensor).state;
+  icon: "mdi:printer-alert"
+  on_state:
+    then:
+    - script.execute: update_led_color
+  internal: false
+
+- platform: template
+  name: "Printer Has Warning"
+  id: printer_has_warning_sensor
+  lambda: |-
+    return id(printer_has_warning_sensor).state;
+  icon: "mdi:printer-warning"
+  on_state:
+    then:
+    - script.execute: update_led_color
+  internal: false
+
 script:
 - id: check_printago_status
   mode: queued
@@ -116,56 +138,69 @@ script:
       else:
       - if:
           condition:
-            and:
-            - lambda: 'return id(printer_is_online_sensor).state;'
-            - lambda: 'return id(printer_confirmed_ready_sensor).state;'
-            - lambda: 'return id(printer_is_available_sensor).state;'
+            or:
+            - lambda: 'return id(printer_has_error_sensor).state;'
+            - lambda: 'return id(printer_has_warning_sensor).state;'
           then:
-          # Blue (Ready)
           - light.turn_on:
               id: openqueue_rgb
-              red: 0.0
+              red: 1.0
               green: 0.0
-              blue: 1.0
+              blue: 0.0
               effect: none
           else:
           - if:
               condition:
                 and:
                 - lambda: 'return id(printer_is_online_sensor).state;'
-                - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                - lambda: 'return id(printer_confirmed_ready_sensor).state;'
                 - lambda: 'return id(printer_is_available_sensor).state;'
               then:
-              # Magenta (Set Ready)
+              # Blue (Ready)
               - light.turn_on:
                   id: openqueue_rgb
-                  red: 0.9
+                  red: 0.0
                   green: 0.0
-                  blue: 0.7
-                  effect: Pulse
+                  blue: 1.0
+                  effect: none
               else:
               - if:
                   condition:
                     and:
                     - lambda: 'return id(printer_is_online_sensor).state;'
-                    - lambda: 'return !id(printer_is_available_sensor).state;'
                     - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                    - lambda: 'return id(printer_is_available_sensor).state;'
                   then:
-                  # Green (Busy)
+                  # Magenta (Set Ready)
                   - light.turn_on:
                       id: openqueue_rgb
-                      red: 0.0
-                      green: 1.0
-                      blue: 0.0
-                      effect: none
+                      red: 0.9
+                      green: 0.0
+                      blue: 0.7
+                      effect: Pulse
                   else:
-                  # Fallback/default
-                  - light.turn_on:
-                      id: openqueue_rgb
-                      red: 1.0
-                      green: 1.0
-                      blue: 1.0
-                      effect: none
+                  - if:
+                      condition:
+                        and:
+                        - lambda: 'return id(printer_is_online_sensor).state;'
+                        - lambda: 'return !id(printer_is_available_sensor).state;'
+                        - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                      then:
+                      # Green (Busy)
+                      - light.turn_on:
+                          id: openqueue_rgb
+                          red: 0.0
+                          green: 1.0
+                          blue: 0.0
+                          effect: none
+                      else:
+                      # Fallback/default
+                      - light.turn_on:
+                          id: openqueue_rgb
+                          red: 1.0
+                          green: 1.0
+                          blue: 1.0
+                          effect: none
 - id: mark_printer_ready
   mode: queued
   then:
@@ -328,7 +363,18 @@ text:
               id(printer_name).publish_state(name);
               ESP_LOGV("mqtt", "Set printer name to: %s", name);
             }
-            
+
+            // Check for errors in data.health.errors
+            bool has_error = false;
+            if (root.containsKey("data") && root["data"].containsKey("health")) {
+              JsonObject health = root["data"]["health"];
+              if (health.containsKey("errors")) {
+                JsonArray errors = health["errors"].as<JsonArray>();
+                has_error = errors.size() > 0;
+              }
+            }
+            id(printer_has_error_sensor).publish_state(has_error);
+
             // Only update the relevant sensors from this topic
             id(printer_is_online_sensor).publish_state(is_online);
             id(printer_is_available_sensor).publish_state(is_available);

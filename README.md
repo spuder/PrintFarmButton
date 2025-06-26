@@ -86,3 +86,9 @@ To flash, ensure you have the `esphome` cli installed (`brew install esphome`)
 cd firmware/esphome
 esphome run config.yaml
 ```
+
+To update remotely
+(where xxxxxx is the last 6 digits of the mac address). You can find the mac address in the web interface. 
+```bash
+esphome run config.yaml --device openqueue-xxxx
+```
