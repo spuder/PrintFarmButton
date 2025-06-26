@@ -128,13 +128,14 @@ script:
       condition:
         not:
         - lambda: 'return id(printer_is_online_sensor).state;'
-      then:
-      - light.turn_on:
-          id: printfarmbutton_rgb
-          red: 1.0
-          green: 1.0
-          blue: 1.0
-          effect: none
+      then: # - light.turn_on:
+
+      #     id: printfarmbutton_rgb
+      #     red: 1.0
+      #     green: 1.0
+      #     blue: 1.0
+      #     effect: none
+      # LED white on offline is now commented out
       else:
       - if:
           condition:
@@ -364,21 +365,27 @@ text:
               ESP_LOGV("mqtt", "Set printer name to: %s", name);
             }
 
-            // Check for errors in data.health.errors
+            // Check for errors and warnings in data.health.errors and data.health.warnings
             bool has_error = false;
+            bool has_warning = false;
             if (root.containsKey("data") && root["data"].containsKey("health")) {
               JsonObject health = root["data"]["health"];
               if (health.containsKey("errors")) {
                 JsonArray errors = health["errors"].as<JsonArray>();
                 has_error = errors.size() > 0;
               }
+              if (health.containsKey("warnings")) {
+                JsonArray warnings = health["warnings"].as<JsonArray>();
+                has_warning = warnings.size() > 0;
+              }
             }
             id(printer_has_error_sensor).publish_state(has_error);
+            id(printer_has_warning_sensor).publish_state(has_warning);
 
             // Only update the relevant sensors from this topic
             id(printer_is_online_sensor).publish_state(is_online);
             id(printer_is_available_sensor).publish_state(is_available);
-            ESP_LOGV("mqtt", "Parsed isOnline: %s, isAvailable: %s", is_online ? "true" : "false", is_available ? "true" : "false");
+            ESP_LOGV("mqtt", "Parsed isOnline: %s, isAvailable: %s, has_error: %s, has_warning: %s", is_online ? "true" : "false", is_available ? "true" : "false", has_error ? "true" : "false", has_warning ? "true" : "false");
           });
           
           // Additional subscription to stores/$USERNAME/entities/printers for confirmedReady
