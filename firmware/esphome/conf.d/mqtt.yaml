@@ -28,7 +28,7 @@ mqtt:
   on_disconnect:
     then:
     - light.turn_on:
-        id: openqueue_rgb
+        id: printfarmbutton_rgb
         red: 1.0
         green: 1.0
         blue: 1.0

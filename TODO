@@ -9,3 +9,4 @@
 [x] all mqtt text boxes should have on_value that checks if values are set, and if they are subscribe to mqtt
 [x] ON mqtt disconnect, turn off led
 [x] Debug why it starts purple pusling on boot
+[ ] Support Red

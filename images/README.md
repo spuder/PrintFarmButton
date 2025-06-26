@@ -1,7 +1,7 @@
-# OpenQueue
+# PrintFarmButton
 
 <p align="center">
-  <img src="images/logo.png" alt="OpenQueue Logo" width="200"/>
+  <img src="images/logo.png" alt="PrintFarmButton Logo" width="200"/>
 </p>
 
 Open Source Andon light for 3d printers. 

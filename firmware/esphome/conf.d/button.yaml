@@ -1,4 +1,4 @@
-# Button config for OpenQueue
+# Button config for PrintFarmButton
 http_request:
   id: http_request_data
   verify_ssl: false

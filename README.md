@@ -1,7 +1,7 @@
-# OpenQueueButton
+# PrintFarmButton
 
 <p align="center">
-  <img src="images/logo.png" alt="OpenQueue Logo" width="200"/>
+  <img src="images/logo.png" alt="PrintFarmButton Logo" width="200"/>
 </p>
 
 Open Source Andon light for 3d printers. 
@@ -24,10 +24,10 @@ esphome compile config.yaml
 esphome upload config.yaml
 ```
 
-Then join the `openqueue` wifi network and navigate to 192.168.4.1
+Then join the `printfarmbutton` wifi network and navigate to 192.168.4.1
 Enter your wifi credentials and wait for it to reboot
 
-Once you've joined it to your wifi, navigate to `http://openqueue.local` or find the ip address. 
+Once you've joined it to your wifi, navigate to `http://printfarmbutton-xxxxxx.local` or find the ip address. 
 
 ## Hardware
 
@@ -90,5 +90,5 @@ esphome run config.yaml
 To update remotely
 (where xxxxxx is the last 6 digits of the mac address). You can find the mac address in the web interface. 
 ```bash
-esphome run config.yaml --device openqueue-xxxx
+esphome run config.yaml --device printfarmbutton-xxxx
 ```
