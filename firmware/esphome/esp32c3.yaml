@@ -1,0 +1,7 @@
+# ESP32-C3 PrintFarmButton config
+
+esp32:
+  board: esp32-c3-devkitm-1 # Change to your actual C
+
+packages:
+  common: !include common.yaml

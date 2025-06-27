@@ -87,10 +87,15 @@ cd firmware/esphome
 esphome run config.yaml
 ```
 
-To update remotely
-(where xxxxxx is the last 6 digits of the mac address). You can find the mac address in the web interface. 
+To update remotely for a specific board type (e.g., ESP32-C3), set the BOARD_TYPE environment variable:
+
 ```bash
+export BOARD_TYPE=esp32-c3
 esphome run config.yaml --device printfarmbutton-xxxx
+```
+Or in a single command:
+```bash
+BOARD_TYPE=esp32-c3 esphome run config.yaml --device printfarmbutton-xxxx
 ```
 
 ## Building Firmware
@@ -103,12 +108,12 @@ This project supports multiple ESP32 board types (S3 and C3) using a modular ESP
 
 ### Build for ESP32-S3
 ```
-esphome compile firmware/esphome/config.yaml --substitution board_type=esp32-s3
+BOARD_TYPE=esp32-s3 esphome compile firmware/esphome/config.yaml
 ```
 
 ### Build for ESP32-C3
 ```
-esphome compile firmware/esphome/config.yaml --substitution board_type=esp32-c3
+BOARD_TYPE=esp32-c3 esphome compile firmware/esphome/config.yaml
 ```
 
 ### Output

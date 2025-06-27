@@ -1,4 +1,3 @@
-# Central ESPHome config for PrintFarmButton
 esphome:
   name: printfarmbutton
   friendly_name: PrintFarmButton
@@ -10,19 +9,7 @@ esphome:
         effect: Rainbow
     - delay: 3s
 
-substitutions:
-  board_type: !env_var BOARD_TYPE "esp32-s3"
-
 packages:
-  board_esp32_s3: !include
-    file: ./boards/esp32-s3.yaml
-    vars:
-      board_active: !lambda 'return "${board_type}" == "esp32-s3";'
-
-  board_esp32_c3: !include
-    file: ./boards/esp32-c3.yaml
-    vars:
-      board_active: !lambda 'return "${board_type}" == "esp32-c3";'
   led: !include conf.d/led.yaml
   web_server: !include conf.d/web_server.yaml
   mqtt: !include conf.d/mqtt.yaml

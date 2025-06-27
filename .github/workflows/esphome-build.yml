@@ -16,16 +16,12 @@ jobs:
       - name: Build ESP32-S3 firmware
         uses: esphome/build-action@v6
         with:
-          yaml-file: firmware/esphome/config.yaml
-        env:
-          BOARD_TYPE: esp32-s3
+          yaml-file: firmware/esphome/esp32s3.yaml
 
       - name: Build ESP32-C3 firmware
         uses: esphome/build-action@v6
         with:
-          yaml-file: firmware/esphome/config.yaml
-        env:
-          BOARD_TYPE: esp32-c3
+          yaml-file: firmware/esphome/esp32c3.yaml
 
       - name: List built firmware files
         run: |
