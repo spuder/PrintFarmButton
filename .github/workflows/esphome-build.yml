@@ -30,8 +30,17 @@ jobs:
       - name: Move firmware to build directory
         run: |
           mkdir -p firmware/build
-          mv firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin firmware/build/firmware-esp32s3.bin
-          mv firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin firmware/build/firmware-esp32c3.bin
+          find firmware/esphome/.esphome/build -name firmware.bin -exec cp --parents {} firmware/build/ \;
+          # Rename S3 binary if found
+          if [ -f firmware/build/firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin ]; then
+            mv firmware/build/firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin firmware/build/firmware-esp32s3.bin
+          fi
+          # Rename C3 binary if found
+          if [ -f firmware/build/firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin ]; then
+            mv firmware/build/firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin firmware/build/firmware-esp32c3.bin
+          fi
+          # Clean up extra folders
+          rm -rf firmware/build/firmware
 
       - name: Create ESP Web Tools manifest file
         run: |
