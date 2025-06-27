@@ -8,94 +8,137 @@ on:
 
 permissions:
   contents: write
+  actions: read
+  checks: write
 
 jobs:
   build:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        target: [esp32s3, esp32c3]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
+        with:
+          fetch-depth: 0
+      
+      - name: Create empty secrets file
+        run: |
+          touch firmware/esphome/secrets.yaml || true
+      
       - name: Build ESP32-S3 firmware
         uses: esphome/build-action@v6
         with:
           yaml-file: firmware/esphome/esp32s3.yaml
-
-      - name: List S3 build directory
-        run: |
-          echo "Listing S3 build directory after build:"
-          ls -lhR firmware/esphome/.esphome/build || true
-
-      - name: Move S3 firmware to output and generate md5
-        shell: bash
-        run: |
-          set -e
-          mkdir -p firmware/output
-          S3_SRC=firmware/esphome/.esphome/build/printfarmbutton/firmware.bin
-          if [ -f "$S3_SRC" ]; then
-            cp "$S3_SRC" firmware/output/printfarmbutton-esp32s3.bin
-            md5sum firmware/output/printfarmbutton-esp32s3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32s3.bin.md5
-          else
-            echo "S3 firmware not found!"
-            exit 1
-          fi
-          rm -rf firmware/esphome/.esphome/build
+          complete-manifest: false
+        if: matrix.target == 'esp32s3'
 
       - name: Build ESP32-C3 firmware
         uses: esphome/build-action@v6
         with:
           yaml-file: firmware/esphome/esp32c3.yaml
-
-      - name: List C3 build directory
+          complete-manifest: false
+        if: matrix.target == 'esp32c3'
+      
+      - name: List build output
         run: |
-          echo "Listing C3 build directory after build:"
-          ls -lhR firmware/esphome/.esphome/build || true
+          ls -la
+          ls printfarmbutton-${{ matrix.target }}/* || true
 
-      - name: Move C3 firmware to output and generate md5
-        shell: bash
+      - name: Generate md5 checksum
         run: |
-          set -e
+          ls -la printfarmbutton-${{ matrix.target }}
+
+          for file in printfarmbutton-${{ matrix.target }}/*.bin; do
+            md5sum "$file" | awk '{print $1}' > "${file}.md5"
+            md5_length=$(wc -c < "${file}.md5")
+            if [ "$md5_length" -ne 33 ]; then
+              echo "MD5 generation failed for $file (length: $md5_length)"
+              exit 1
+            fi
+          done
+          ls -la printfarmbutton-${{ matrix.target }}
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: printfarmbutton-${{ matrix.target }}
+          path: printfarmbutton-${{ matrix.target }}/**/*
+          retention-days: 5
+          if-no-files-found: error
+
+  combine-and-deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded-artifacts
+
+      - name: List artifacts
+        run: |
+          ls -la downloaded-artifacts/
+
+      - name: Prepare output directory
+        run: |
           mkdir -p firmware/output
-          C3_SRC=firmware/esphome/.esphome/build/printfarmbutton/firmware.bin
-          if [ -f "$C3_SRC" ]; then
-            cp "$C3_SRC" firmware/output/printfarmbutton-esp32c3.bin
-            md5sum firmware/output/printfarmbutton-esp32c3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32c3.bin.md5
-          else
-            echo "C3 firmware not found!"
-            exit 1
-          fi
-          rm -rf firmware/esphome/.esphome/build
-          echo "Output directory contents after copy/rename:"
-          ls -lh firmware/output
+          cp downloaded-artifacts/printfarmbutton-esp32s3/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-esp32s3/*.md5 firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-esp32c3/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-esp32c3/*.md5 firmware/output/ || true
 
       - name: Create ESP Web Tools manifest file
         run: |
-          echo '{"name": "PrintFarmButton", "version": "1.0.0", "builds": [ {"chipFamily": "ESP32", "parts": [{"path": "printfarmbutton-esp32s3.bin", "offset": 0}]}, {"chipFamily": "ESP32-C3", "parts": [{"path": "printfarmbutton-esp32c3.bin", "offset": 0}]} ]}' > firmware/output/manifest.json
+          jq -n '{
+            name: "PrintFarmButton",
+            version: "1.0.0",
+            builds: [],
+            new_install_prompt_erase: true
+          }' > firmware/output/manifest.json
+
+          for target in esp32s3 esp32c3; do
+            if [ -f "downloaded-artifacts/printfarmbutton-$target/manifest.json" ]; then
+              jq --slurpfile new_build "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new_build' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+            else
+              echo "Warning: manifest for $target not found, creating basic entry"
+              chip_family="ESP32"
+              if [ "$target" = "esp32c3" ]; then
+                chip_family="ESP32-C3"
+              fi
+              
+              jq --arg chip "$chip_family" --arg path "printfarmbutton-$target.bin" \
+                '.builds += [{"chipFamily": $chip, "parts": [{"path": $path, "offset": 0}]}]' \
+                firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+            fi
+          done
+
+          echo "Final manifest:"
+          jq '.' firmware/output/manifest.json
 
       - name: List files in output directory
         run: |
-          echo "Contents of firmware/output before git commit:"
-          ls -lh firmware/output || true
-
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: firmware-build
-          path: firmware/output/
+          echo "Contents of firmware/output:"
+          ls -lh firmware/output/
 
       - name: Commit and push build artifacts
-        if: github.ref == 'refs/heads/main'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          # Only add files that exist
-          if [ -f firmware/output/printfarmbutton-esp32s3.bin ]; then git add firmware/output/printfarmbutton-esp32s3.bin; fi
-          if [ -f firmware/output/printfarmbutton-esp32c3.bin ]; then git add firmware/output/printfarmbutton-esp32c3.bin; fi
-          if [ -f firmware/output/printfarmbutton-esp32s3.bin.md5 ]; then git add firmware/output/printfarmbutton-esp32s3.bin.md5; fi
-          if [ -f firmware/output/printfarmbutton-esp32c3.bin.md5 ]; then git add firmware/output/printfarmbutton-esp32c3.bin.md5; fi
-          git add firmware/output/manifest.json
-          git commit -m "Update firmware build [skip ci]" || echo "No changes to commit"
-          git push || echo "No changes to push"
-
-      # Ensure all actions use supported versions (v3 or v4)
-      # If you add caching, use actions/cache@v3 or actions/cache@v4
+          
+          # Add all files in firmware/output
+          git add firmware/output/
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "Update firmware build [skip ci]"
+            git push
+          fi
