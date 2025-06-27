@@ -92,3 +92,28 @@ To update remotely
 ```bash
 esphome run config.yaml --device printfarmbutton-xxxx
 ```
+
+## Building Firmware
+
+This project supports multiple ESP32 board types (S3 and C3) using a modular ESPHome configuration.
+
+### Prerequisites
+- Python 3.11+
+- [ESPHome](https://esphome.io/) installed (`pip install esphome`)
+
+### Build for ESP32-S3
+```
+esphome compile firmware/esphome/config.yaml --substitution board_type=esp32-s3
+```
+
+### Build for ESP32-C3
+```
+esphome compile firmware/esphome/config.yaml --substitution board_type=esp32-c3
+```
+
+### Output
+- Compiled binaries will be found in `.esphome/build/` or as moved by the GitHub Actions workflow to `firmware/build/`.
+- The correct binary for each board is referenced in `firmware/build/manifest.json` for use with ESP Web Tools.
+
+### GitHub Actions
+Firmware for both boards is built automatically on each push to `main` via GitHub Actions. Artifacts and the manifest are committed to `firmware/build/`.

@@ -17,15 +17,15 @@ jobs:
         uses: esphome/build-action@v6
         with:
           yaml-file: firmware/esphome/config.yaml
-          substitutions: |
-            board_type=esp32-s3
+        env:
+          ESPHOME_BOARD_TYPE: esp32-s3
 
       - name: Build ESP32-C3 firmware
         uses: esphome/build-action@v6
         with:
           yaml-file: firmware/esphome/config.yaml
-          substitutions: |
-            board_type=esp32-c3
+        env:
+          ESPHOME_BOARD_TYPE: esp32-c3
 
       - name: Move firmware to build directory
         run: |
