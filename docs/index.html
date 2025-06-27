@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Improv Serial Provisioning</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      margin: 0;
+      padding: 0;
+      /* Rainbow gradient background */
+      min-height: 100vh;
+      background: linear-gradient(135deg, #ff5e62 0%, #ff9966 20%, #f9d423 40%, #a8e063 60%, #43cea2 80%, #1976d2 100%);
+      background-size: 200% 200%;
+      animation: rainbow 8s ease-in-out infinite;
+    }
+    @keyframes rainbow {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+    .container { max-width: 400px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    h1 { font-size: 1.5em; margin-bottom: 1em; }
+    h2 { font-size: 1.2em; margin: 1.5em 0 1em; }
+    label { display: block; margin-top: 1em; }
+    input, button { width: 100%; padding: 0.5em; margin-top: 0.5em; }
+    .status { margin-top: 1em; color: #007a00; }
+    .error { color: #c00; }
+    .printer-list { margin-top: 1.5em; }
+    .printer-item { background: #f3f3f3; border-radius: 6px; padding: 1em; margin-bottom: 1em; box-shadow: 0 1px 3px #0001; }
+    .printer-label { font-weight: bold; color: #1976d2; }
+    .printer-id { color: #555; font-size: 0.95em; word-break: break-all; }
+    hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Improv Serial Provisioning</h1>
+    <form id="provision-form">
+      <label>WiFi SSID
+        <input type="text" id="ssid" required />
+      </label>
+      <label>WiFi Password
+        <input type="password" id="password" required />
+      </label>
+      <button type="submit">Provision Device</button>
+    </form>
+    <div class="status" id="status"></div>
+    <hr>
+    <h2>Printago API Test</h2>
+    <label>API Key
+      <input type="text" id="api-key" placeholder="ApiKey ..." />
+    </label>
+    <label>Store ID
+      <input type="text" id="store-id" placeholder="Store ID" />
+    </label>
+    <button id="fetch-printers">Fetch Printers</button>
+    <div id="printer-list" class="printer-list"></div>
+  </div>
+  <script>
+    // Improv Serial protocol constants
+    const CMD_PROVISION = 0x01;
+    const STATE_PROVISIONING = 0x02;
+    const STATE_PROVISIONED = 0x03;
+    const STATE_FAILED = 0x04;
+
+    function encodeImprovProvision(ssid, password) {
+      // Improv Serial: [0x70, 0x63, 0x00, len, CMD, ssid, 0x00, password]
+      const encoder = new TextEncoder();
+      const ssidBytes = encoder.encode(ssid);
+      const passBytes = encoder.encode(password);
+      const len = 1 + ssidBytes.length + 1 + passBytes.length;
+      const arr = new Uint8Array(4 + len);
+      arr[0] = 0x70; // 'p'
+      arr[1] = 0x63; // 'c'
+      arr[2] = 0x00; // reserved
+      arr[3] = len;
+      arr[4] = CMD_PROVISION;
+      arr.set(ssidBytes, 5);
+      arr[5 + ssidBytes.length] = 0x00;
+      arr.set(passBytes, 6 + ssidBytes.length);
+      return arr;
+    }
+
+    async function connectSerial() {
+      if (!('serial' in navigator)) throw new Error('Web Serial API not supported');
+      const port = await navigator.serial.requestPort();
+      await port.open({ baudRate: 115200 });
+      return port;
+    }
+
+    document.getElementById('provision-form').onsubmit = async (e) => {
+      e.preventDefault();
+      const ssid = document.getElementById('ssid').value;
+      const password = document.getElementById('password').value;
+      const status = document.getElementById('status');
+      status.textContent = 'Connecting to device...';
+      status.className = 'status';
+      try {
+        const port = await connectSerial();
+        status.textContent = 'Connected. Sending credentials...';
+        const writer = port.writable.getWriter();
+        const data = encodeImprovProvision(ssid, password);
+        await writer.write(data);
+        writer.releaseLock();
+        status.textContent = 'Provisioning...';
+        // Optionally, listen for response (not implemented here)
+        setTimeout(() => {
+          status.textContent = 'Provisioning command sent! If your credentials are correct, the device will connect to WiFi.';
+        }, 2000);
+        await port.close();
+      } catch (err) {
+        status.textContent = 'Error: ' + err.message;
+        status.className = 'status error';
+      }
+    };
+
+    document.getElementById('fetch-printers').onclick = async (e) => {
+      e.preventDefault();
+      const apiKey = document.getElementById('api-key').value.trim();
+      const storeId = document.getElementById('store-id').value.trim();
+      const printerList = document.getElementById('printer-list');
+      printerList.innerHTML = 'Fetching...';
+      if (!apiKey || !storeId) {
+        printerList.innerHTML = '<span class="error">Please enter both API Key and Store ID.</span>';
+        return;
+      }
+      try {
+        const resp = await fetch('https://api.printago.io/v1/printers', {
+          headers: {
+            'authorization': 'ApiKey ' + apiKey,
+            'x-printago-storeid': storeId
+          }
+        });
+        if (!resp.ok) {
+          printerList.innerHTML = '<span class="error">Error: ' + resp.status + ' ' + resp.statusText + '</span>';
+          return;
+        }
+        const data = await resp.json();
+        let output = [];
+        if (Array.isArray(data)) {
+          output = data.map(p => ({ id: p.id, name: p.name }));
+        } else if (data && data.printers && Array.isArray(data.printers)) {
+          output = data.printers.map(p => ({ id: p.id, name: p.name }));
+        }
+        if (output.length === 0) {
+          printerList.innerHTML = '<span class="error">No printers found.</span>';
+          return;
+        }
+        printerList.innerHTML = output.map(p => `
+          <div class="printer-item">
+            <div class="printer-label">Name:</div>
+            <div>${p.name || '<em>Unnamed</em>'}</div>
+            <div class="printer-label" style="margin-top:0.5em;">Printer ID:</div>
+            <div class="printer-id">${p.id}</div>
+          </div>
+        `).join('');
+      } catch (err) {
+        printerList.innerHTML = '<span class="error">Error: ' + err.message + '</span>';
+      }
+    };
+  </script>
+</body>
+</html>
