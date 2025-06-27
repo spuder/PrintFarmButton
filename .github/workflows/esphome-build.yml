@@ -27,6 +27,10 @@ jobs:
         env:
           BOARD_TYPE: esp32-c3
 
+      - name: List built firmware files
+        run: |
+          echo "Listing built firmware files:"
+          find firmware/esphome/.esphome/build -name firmware.bin
       - name: Move firmware to build directory
         run: |
           mkdir -p firmware/build
