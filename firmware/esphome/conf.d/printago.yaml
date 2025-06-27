@@ -261,6 +261,7 @@ text:
   web_server:
     sorting_group_id: printago
     sorting_weight: 5
+  icon: "mdi:key"
 
 - platform: template
   name: "Username"

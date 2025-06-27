@@ -20,7 +20,70 @@
       50% { background-position: 100% 50%; }
       100% { background-position: 0% 50%; }
     }
-    .container { max-width: 400px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    .hero {
+      background: linear-gradient(135deg, #ff5e62 0%, #ff9966 20%, #f9d423 40%, #a8e063 60%, #43cea2 80%, #1976d2 100%);
+      color: #fff;
+      text-align: center;
+      padding: 4em 1em 3em 1em;
+      min-height: 60vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      animation: rainbow 8s ease-in-out infinite;
+    }
+    .hero-cta {
+      display: inline-block;
+      margin-top: 2em;
+      background: #fff;
+      color: #1976d2;
+      font-weight: bold;
+      padding: 0.75em 2em;
+      border-radius: 30px;
+      text-decoration: none;
+      box-shadow: 0 2px 8px #0002;
+      transition: background 0.2s, color 0.2s;
+    }
+    .hero-cta:hover {
+      background: #1976d2;
+      color: #fff;
+    }
+    .hero-logo {
+      box-shadow: 0 2px 8px #0002;
+      border-radius: 50%;
+      background: #fff;
+      padding: 0.5em;
+    }
+    .hero-desc {
+      font-size: 1.1em;
+      margin-bottom: 1.5em;
+      color: #fff;
+      opacity: 0.95;
+    }
+    .section {
+      padding: 3em 1em 2em 1em;
+      background: #fff;
+    }
+    .section.alt {
+      background: #f9f9fb;
+    }
+    .section.info {
+      background: #e3f2fd;
+    }
+    .section.footer {
+      background: #222;
+      color: #fff;
+      padding: 2em 1em 1em 1em;
+      font-size: 0.95em;
+    }
+    .container {
+      max-width: 400px;
+      margin: 0 auto;
+      background: none;
+      border-radius: 8px;
+      box-shadow: none;
+      padding: 0;
+    }
     h1 { font-size: 1.5em; margin-bottom: 1em; }
     h2 { font-size: 1.2em; margin: 1.5em 0 1em; }
     label { display: block; margin-top: 1em; }
@@ -35,29 +98,63 @@
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>Improv Serial Provisioning</h1>
-    <form id="provision-form">
-      <label>WiFi SSID
-        <input type="text" id="ssid" required />
+  <section class="hero">
+    <div class="container">
+      <img src="../images/logo.png" alt="PrintFarmButton Logo" class="hero-logo" style="width:100px;display:block;margin:0 auto 1em;">
+      <h1>Improv Serial Provisioning</h1>
+      <p class="hero-desc">Easily provision and manage your PrintFarmButton devices. Connect, configure, and control your 3D printer farm with ease.</p>
+      <a href="#provision" class="hero-cta">Get Started</a>
+    </div>
+  </section>
+
+  <section id="provision" class="section">
+    <div class="container">
+      <h2>WiFi Provisioning</h2>
+      <form id="provision-form">
+        <label>WiFi SSID
+          <input type="text" id="ssid" required />
+        </label>
+        <label>WiFi Password
+          <input type="password" id="password" required />
+        </label>
+        <button type="submit">Provision Device</button>
+      </form>
+      <div class="status" id="status"></div>
+    </div>
+  </section>
+
+  <section class="section alt">
+    <div class="container">
+      <h2>Printago API Test</h2>
+      <label>API Key
+        <input type="text" id="api-key" placeholder="ApiKey ..." />
       </label>
-      <label>WiFi Password
-        <input type="password" id="password" required />
+      <label>Store ID
+        <input type="text" id="store-id" placeholder="Store ID" />
       </label>
-      <button type="submit">Provision Device</button>
-    </form>
-    <div class="status" id="status"></div>
-    <hr>
-    <h2>Printago API Test</h2>
-    <label>API Key
-      <input type="text" id="api-key" placeholder="ApiKey ..." />
-    </label>
-    <label>Store ID
-      <input type="text" id="store-id" placeholder="Store ID" />
-    </label>
-    <button id="fetch-printers">Fetch Printers</button>
-    <div id="printer-list" class="printer-list"></div>
-  </div>
+      <button id="fetch-printers">Fetch Printers</button>
+      <div id="printer-list" class="printer-list"></div>
+    </div>
+  </section>
+
+  <section class="section info">
+    <div class="container">
+      <h2>How It Works</h2>
+      <img src="../images/PrintFarmButton-diagram.png" alt="How it works" style="width:100%;max-width:350px;display:block;margin:1em auto;">
+      <ul style="text-align:left;max-width:350px;margin:1em auto;">
+        <li>Connect your PrintFarmButton to WiFi using Improv Serial.</li>
+        <li>Link your Printago account with your API Key and Store ID.</li>
+        <li>Monitor and control your printers from anywhere.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="section footer">
+    <div class="container" style="text-align:center;">
+      <p>&copy; 2025 PrintFarmButton &mdash; <a href="https://github.com/spuder/PrintFarmButton">GitHub</a></p>
+    </div>
+  </section>
+
   <script>
     // Improv Serial protocol constants
     const CMD_PROVISION = 0x01;
