@@ -31,37 +31,46 @@ jobs:
         run: |
           echo "Listing built firmware files:"
           find firmware/esphome/.esphome/build -name firmware.bin
-      - name: Move firmware to build directory
+      - name: Move firmware to output directory
+        shell: bash
         run: |
-          mkdir -p firmware/build
-          find firmware/esphome/.esphome/build -name firmware.bin -exec cp --parents {} firmware/build/ \;
-          # Rename S3 binary if found
-          if [ -f firmware/build/firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin ]; then
-            mv firmware/build/firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin firmware/build/firmware-esp32s3.bin
+          mkdir -p firmware/output
+          # Copy all firmware.bin files from all build outputs
+          find firmware/esphome/.esphome/build -name firmware.bin -exec cp --parents {} firmware/output/ \;
+          # Try to identify and rename S3 and C3 binaries
+          if [ -f firmware/output/firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin ]; then
+            mv firmware/output/firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin firmware/output/firmware-esp32s3.bin
           fi
-          # Rename C3 binary if found
-          if [ -f firmware/build/firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin ]; then
-            mv firmware/build/firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin firmware/build/firmware-esp32c3.bin
+          if [ -f firmware/output/firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin ]; then
+            mv firmware/output/firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin firmware/output/firmware-esp32c3.bin
           fi
           # Clean up extra folders
-          rm -rf firmware/build/firmware
+          rm -rf firmware/output/firmware
 
       - name: Create ESP Web Tools manifest file
         run: |
-          echo '{"name": "PrintFarmButton", "version": "1.0.0", "builds": [ {"chipFamily": "ESP32", "parts": [{"path": "firmware-esp32s3.bin", "offset": 0}]}, {"chipFamily": "ESP32-C3", "parts": [{"path": "firmware-esp32c3.bin", "offset": 0}]} ]}' > firmware/build/manifest.json
+          echo '{"name": "PrintFarmButton", "version": "1.0.0", "builds": [ {"chipFamily": "ESP32", "parts": [{"path": "firmware-esp32s3.bin", "offset": 0}]}, {"chipFamily": "ESP32-C3", "parts": [{"path": "firmware-esp32c3.bin", "offset": 0}]} ]}' > firmware/output/manifest.json
+
+      - name: List files in output directory
+        run: |
+          echo "Contents of firmware/output before git commit:"
+          ls -lh firmware/output || true
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: firmware-build
-          path: firmware/build/
+          path: firmware/output/
 
       - name: Commit and push build artifacts
         if: github.ref == 'refs/heads/main'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git add firmware/build/firmware-esp32s3.bin firmware/build/firmware-esp32c3.bin firmware/build/manifest.json
+          # Only add files that exist
+          if [ -f firmware/output/firmware-esp32s3.bin ]; then git add firmware/output/firmware-esp32s3.bin; fi
+          if [ -f firmware/output/firmware-esp32c3.bin ]; then git add firmware/output/firmware-esp32c3.bin; fi
+          git add firmware/output/manifest.json
           git commit -m "Update firmware build [skip ci]" || echo "No changes to commit"
           git push || echo "No changes to push"
 
