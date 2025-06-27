@@ -25,7 +25,11 @@ logger:
   #   mqtt: VERBOSE
 
 ota:
-  platform: http_request
+- platform: esphome
+- platform: http_request
+
+http_request:
+  verify_ssl: false
 
 esp32_improv:
   authorizer: none

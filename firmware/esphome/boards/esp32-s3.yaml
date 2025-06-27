@@ -1,3 +1,0 @@
-# Board-specific config for ESP32-S3
-esp32:
-  board: esp32-s3-devkitc-1

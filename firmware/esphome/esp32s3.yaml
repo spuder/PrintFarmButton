@@ -3,3 +3,13 @@ esp32:
 
 packages:
   common: !include common.yaml
+
+button:
+- platform: template
+  name: Update Firmware Button
+  on_press:
+  - logger.log: Update triggered, initiating OTA firmware update.
+  - ota.http_request.flash:
+      #required for remote firmware updating
+      md5_url: https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/output/manifest.json
+      url: https://myURL/firmware.ota.bin

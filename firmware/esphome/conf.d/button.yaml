@@ -1,7 +1,4 @@
 # Button config for PrintFarmButton
-http_request:
-  id: http_request_data
-  verify_ssl: false
 
 binary_sensor:
 - platform: gpio
@@ -18,3 +15,19 @@ binary_sensor:
   on_press:
     then:
     - script.execute: mark_printer_ready
+
+# update:
+# - platform: http_request
+#   name: "Update from GitHub (ESP32-S3)"
+#   id: github_ota_update_s3
+#   url: "https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/build/firmware-esp32s3.bin"
+#   method: GET
+#   headers:
+#     User-Agent: esphome-ota
+# - platform: http_request
+#   name: "Update from GitHub (ESP32-C3)"
+#   id: github_ota_update_c3
+#   url: "https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/build/firmware-esp32c3.bin"
+#   method: GET
+#   headers:
+#     User-Agent: esphome-ota

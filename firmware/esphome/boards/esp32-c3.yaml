@@ -1,3 +1,0 @@
-# Board-specific config for ESP32-C3
-esp32:
-  board: esp32-c3-devkitm-1
