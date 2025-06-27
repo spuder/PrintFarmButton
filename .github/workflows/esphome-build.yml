@@ -33,19 +33,28 @@ jobs:
       - name: Move and rename firmware to output directory, generate md5
         shell: bash
         run: |
+          set -e
           mkdir -p firmware/output
           # S3
           S3_SRC=$(find firmware/esphome/.esphome/build -path '*/printfarmbutton-s3/.pioenvs/printfarmbutton-s3/firmware.bin' | head -n1)
           if [ -f "$S3_SRC" ]; then
             cp "$S3_SRC" firmware/output/printfarmbutton-esp32s3.bin
             md5sum firmware/output/printfarmbutton-esp32s3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32s3.bin.md5
+          else
+            echo "S3 firmware not found!"
+            exit 1
           fi
           # C3
           C3_SRC=$(find firmware/esphome/.esphome/build -path '*/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin' | head -n1)
           if [ -f "$C3_SRC" ]; then
             cp "$C3_SRC" firmware/output/printfarmbutton-esp32c3.bin
             md5sum firmware/output/printfarmbutton-esp32c3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32c3.bin.md5
+          else
+            echo "C3 firmware not found!"
+            exit 1
           fi
+          echo "Output directory contents after copy/rename:"
+          ls -lh firmware/output
 
       - name: Create ESP Web Tools manifest file
         run: |
@@ -70,6 +79,8 @@ jobs:
           # Only add files that exist
           if [ -f firmware/output/printfarmbutton-esp32s3.bin ]; then git add firmware/output/printfarmbutton-esp32s3.bin; fi
           if [ -f firmware/output/printfarmbutton-esp32c3.bin ]; then git add firmware/output/printfarmbutton-esp32c3.bin; fi
+          if [ -f firmware/output/printfarmbutton-esp32s3.bin.md5 ]; then git add firmware/output/printfarmbutton-esp32s3.bin.md5; fi
+          if [ -f firmware/output/printfarmbutton-esp32c3.bin.md5 ]; then git add firmware/output/printfarmbutton-esp32c3.bin.md5; fi
           git add firmware/output/manifest.json
           git commit -m "Update firmware build [skip ci]" || echo "No changes to commit"
           git push || echo "No changes to push"
