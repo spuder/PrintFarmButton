@@ -21,22 +21,12 @@ jobs:
         with:
           yaml-file: firmware/esphome/esp32s3.yaml
 
-      - name: Build ESP32-C3 firmware
-        uses: esphome/build-action@v6
-        with:
-          yaml-file: firmware/esphome/esp32c3.yaml
-
-      - name: List built firmware files
-        run: |
-          echo "Listing built firmware files:"
-          find firmware/esphome/.esphome/build -name firmware.bin
-      - name: Move and rename firmware to output directory, generate md5
+      - name: Move S3 firmware to output and generate md5
         shell: bash
         run: |
           set -e
           mkdir -p firmware/output
-          # S3
-          S3_SRC=firmware/esphome/.esphome/build/printfarmbutton-s3/firmware.bin
+          S3_SRC=firmware/esphome/.esphome/build/printfarmbutton/firmware.bin
           if [ -f "$S3_SRC" ]; then
             cp "$S3_SRC" firmware/output/printfarmbutton-esp32s3.bin
             md5sum firmware/output/printfarmbutton-esp32s3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32s3.bin.md5
@@ -44,8 +34,19 @@ jobs:
             echo "S3 firmware not found!"
             exit 1
           fi
-          # C3
-          C3_SRC=firmware/esphome/.esphome/build/printfarmbutton-c3/firmware.bin
+          rm -rf firmware/esphome/.esphome/build
+
+      - name: Build ESP32-C3 firmware
+        uses: esphome/build-action@v6
+        with:
+          yaml-file: firmware/esphome/esp32c3.yaml
+
+      - name: Move C3 firmware to output and generate md5
+        shell: bash
+        run: |
+          set -e
+          mkdir -p firmware/output
+          C3_SRC=firmware/esphome/.esphome/build/printfarmbutton/firmware.bin
           if [ -f "$C3_SRC" ]; then
             cp "$C3_SRC" firmware/output/printfarmbutton-esp32c3.bin
             md5sum firmware/output/printfarmbutton-esp32c3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32c3.bin.md5
@@ -53,6 +54,7 @@ jobs:
             echo "C3 firmware not found!"
             exit 1
           fi
+          rm -rf firmware/esphome/.esphome/build
           echo "Output directory contents after copy/rename:"
           ls -lh firmware/output
 

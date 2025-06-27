@@ -1,6 +1,5 @@
 esp32:
   board: esp32-s3-devkitc-1
-  build_path: .esphome/build/printfarmbutton-s3
 
 packages:
   common: !include common.yaml
