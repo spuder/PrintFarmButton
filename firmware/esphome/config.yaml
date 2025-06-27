@@ -15,7 +15,11 @@ esp32:
   # framework:
   # type: esp-idf
 
+substitutions:
+  board_type: esp32-s3 # default, can be overridden via CLI or dashboard
+
 packages:
+  board: !include boards/${board_type}.yaml
   led: !include conf.d/led.yaml
   web_server: !include conf.d/web_server.yaml
   mqtt: !include conf.d/mqtt.yaml
@@ -30,17 +34,17 @@ logger:
   #   mqtt.client: VERBOSE
   #   mqtt: VERBOSE
 
-  # api: #can not have mqtt and api at the same time
-
 ota:
-  platform: esphome
+  platform: http_request
 
-# esp32_improv:
-#   authorizer: none
+esp32_improv:
+  authorizer: none
 
-# improv_serial:
+improv_serial:
+  next_url: http://{{device_name}}.local
+  # substitutions:
+  #   board_type: esp32dev
+  #   rgb_led_pin: '4'
 
-# substitutions:
-#   board_type: esp32dev
-#   rgb_led_pin: '4'
-#   # mac_suffix: 'XXXX'
+api:
+  reboot_timeout: 0s

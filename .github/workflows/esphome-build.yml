@@ -1,0 +1,53 @@
+name: Build ESPHome Firmware
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build ESP32-S3 firmware
+        uses: esphome/build-action@v2
+        with:
+          yaml_file: firmware/esphome/config.yaml
+          substitutions: |
+            board_type=esp32-s3
+
+      - name: Build ESP32-C3 firmware
+        uses: esphome/build-action@v2
+        with:
+          yaml_file: firmware/esphome/config.yaml
+          substitutions: |
+            board_type=esp32-c3
+
+      - name: Move firmware to build directory
+        run: |
+          mkdir -p firmware/build
+          mv firmware/esphome/.esphome/build/printfarmbutton/.pioenvs/printfarmbutton/firmware.bin firmware/build/firmware-esp32s3.bin
+          mv firmware/esphome/.esphome/build/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin firmware/build/firmware-esp32c3.bin
+
+      - name: Create ESP Web Tools manifest file
+        run: |
+          echo '{"name": "PrintFarmButton", "version": "1.0.0", "builds": [ {"chipFamily": "ESP32", "parts": [{"path": "firmware-esp32s3.bin", "offset": 0}]}, {"chipFamily": "ESP32-C3", "parts": [{"path": "firmware-esp32c3.bin", "offset": 0}]} ]}' > firmware/build/manifest.json
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: firmware-build
+          path: firmware/build/
+
+      - name: Commit and push build artifacts
+        if: github.ref == 'refs/heads/main'
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          git add firmware/build/firmware-esp32s3.bin firmware/build/firmware-esp32c3.bin firmware/build/manifest.json
+          git commit -m "Update firmware build [skip ci]" || echo "No changes to commit"
+          git push || echo "No changes to push"
