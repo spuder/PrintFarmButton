@@ -21,6 +21,11 @@ jobs:
         with:
           yaml-file: firmware/esphome/esp32s3.yaml
 
+      - name: List S3 build directory
+        run: |
+          echo "Listing S3 build directory after build:"
+          ls -lhR firmware/esphome/.esphome/build || true
+
       - name: Move S3 firmware to output and generate md5
         shell: bash
         run: |
@@ -40,6 +45,11 @@ jobs:
         uses: esphome/build-action@v6
         with:
           yaml-file: firmware/esphome/esp32c3.yaml
+
+      - name: List C3 build directory
+        run: |
+          echo "Listing C3 build directory after build:"
+          ls -lhR firmware/esphome/.esphome/build || true
 
       - name: Move C3 firmware to output and generate md5
         shell: bash
