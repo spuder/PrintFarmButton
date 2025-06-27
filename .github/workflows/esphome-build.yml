@@ -36,7 +36,7 @@ jobs:
           set -e
           mkdir -p firmware/output
           # S3
-          S3_SRC=$(find firmware/esphome/.esphome/build -path '*/printfarmbutton-s3/.pioenvs/printfarmbutton-s3/firmware.bin' | head -n1)
+          S3_SRC=firmware/esphome/.esphome/build/printfarmbutton-s3/firmware.bin
           if [ -f "$S3_SRC" ]; then
             cp "$S3_SRC" firmware/output/printfarmbutton-esp32s3.bin
             md5sum firmware/output/printfarmbutton-esp32s3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32s3.bin.md5
@@ -45,7 +45,7 @@ jobs:
             exit 1
           fi
           # C3
-          C3_SRC=$(find firmware/esphome/.esphome/build -path '*/printfarmbutton-c3/.pioenvs/printfarmbutton-c3/firmware.bin' | head -n1)
+          C3_SRC=firmware/esphome/.esphome/build/printfarmbutton-c3/firmware.bin
           if [ -f "$C3_SRC" ]; then
             cp "$C3_SRC" firmware/output/printfarmbutton-esp32c3.bin
             md5sum firmware/output/printfarmbutton-esp32c3.bin | awk '{print $1}' > firmware/output/printfarmbutton-esp32c3.bin.md5

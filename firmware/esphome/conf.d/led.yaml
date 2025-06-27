@@ -1,23 +1,23 @@
 light:
-- platform: esp32_rmt_led_strip
-  name: "PrintFarmButton RGB"
-  id: printfarmbutton_rgb
-  chipset: WS2812
-  pin: 1
-  num_leds: 15
-  rgb_order: GRB
-  rmt_channel: 0
-  state_topic:
-  internal: false #set to true to hide
-  restore_mode: ALWAYS_OFF
-  effects:
-  - addressable_rainbow:
-      name: Rainbow
-      speed: 25
-      width: 15
-  - pulse:
-      name: Pulse
-      transition_length: 0.3s
-      max_brightness: 100%
-      min_brightness: 50%
-      update_interval: 0.3s
+  - platform: esp32_rmt_led_strip
+    name: "PrintFarmButton RGB"
+    id: printfarmbutton_rgb
+    chipset: WS2812
+    pin: 1
+    num_leds: 15
+    rgb_order: GRB
+    rmt_channel: 0
+    state_topic:
+    internal: false #set to true to hide
+    restore_mode: ALWAYS_OFF
+    effects:
+      - addressable_rainbow:
+            name: Rainbow
+            speed: 25
+            width: 15
+      - pulse:
+            name: Pulse
+            transition_length: 0.3s
+            max_brightness: 100%
+            min_brightness: 50%
+            update_interval: 0.3s
