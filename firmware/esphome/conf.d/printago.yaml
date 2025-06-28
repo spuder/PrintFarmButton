@@ -407,8 +407,8 @@ text:
             JsonObject data = root["data"];
             if (data.containsKey("health")) {
               JsonObject health = data["health"];
-              error_state = health.containsKey("errors") && !health["errors"].isNull();
-              warning_state = health.containsKey("warnings") && !health["warnings"].isNull();
+              error_state = health.containsKey("errors") && health["errors"].size() > 0;
+              warning_state = health.containsKey("warnings") && health["warnings"].size() > 0;
             }
           }
           id(printer_has_error_sensor).publish_state(error_state);
