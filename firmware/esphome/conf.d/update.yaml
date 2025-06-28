@@ -55,12 +55,12 @@ switch:
   state_topic:
 
     # the firmware_update resource checks if an update is available once an hour
-    # the interval resource checks every 5 minutes if auto_update_switch is on and if an update is available
+    # the interval resource checks every 3 minutes if auto_update_switch is on and if an update is available
     # This is a clunkly work around to to the fact that `on_update_available` appears broken on the firmware_update resource
     # This can go away once this PR is merged: https://github.com/esphome/issues/issues/6205#issuecomment-2901019015
 
 interval:
-- interval: 30min
+- interval: 3min
   then:
   - if:
       condition:
