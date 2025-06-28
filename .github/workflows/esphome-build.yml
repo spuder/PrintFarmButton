@@ -114,8 +114,11 @@ jobs:
       - name: Get version from git tag or branch
         id: get_version
         run: |
-          # Try to get the latest tag, fallback to branch name
-          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo ${{ github.ref_name }})
+          # Prefer tags that do NOT start with 'v' if both exist on the same commit
+          VERSION=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
+          if [ -z "$VERSION" ]; then
+            VERSION=${GITHUB_REF_NAME}
+          fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
       - name: Create ESP Web Tools manifest file
@@ -129,7 +132,7 @@ jobs:
 
           for target in esp32s3 esp32c3; do
             if [ -f "downloaded-artifacts/printfarmbutton-$target/manifest.json" ]; then
-              jq --slurpfile new_build "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new_build' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+              jq --slurpfile new "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new_build' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             else
               echo "Warning: manifest for $target not found, creating basic entry"
               chip_family="ESP32"

@@ -20,6 +20,7 @@ button:
   icon: mdi:cloud-check
   on_press:
     then:
+    - logger.log: "Checking for firmware updates."
     - component.update: firmware_update
 
 update:
