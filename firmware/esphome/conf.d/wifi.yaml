@@ -16,6 +16,7 @@ wifi:
     #     blue: 1.0
     #     effect: None
     - script.execute: check_printago_status
+    # - component.update: firmware_update #TODO: This doesn't update for some reason
   on_disconnect:
     then:
     - logger.log: "WiFi Disconnected! Starting fallback hotspot."

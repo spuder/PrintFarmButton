@@ -32,6 +32,7 @@ update:
   web_server:
     sorting_group_id: updates
   entity_category: diagnostic
+  icon: mdi:chip
 #TODO: implement once this pr is merged (extimated 2025.7.x) https://github.com/esphome/issues/issues/6205#issuecomment-2901019015
 # on_update_available:
 #   then:
@@ -47,6 +48,7 @@ switch:
   name: "Auto Update"
   id: auto_update_switch
   optimistic: true
+  restore_value: true # Make the switch state persistent across reboots and firmware updates
   web_server:
     sorting_group_id: updates
   icon: mdi:autorenew

@@ -302,6 +302,7 @@ text:
   web_server:
     sorting_group_id: printago
     sorting_weight: 4
+  icon: "mdi:account-circle"
   on_value:
     then:
     - lambda: |-
