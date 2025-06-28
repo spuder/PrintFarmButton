@@ -32,6 +32,7 @@ update:
   web_server:
     sorting_group_id: updates
   entity_category: diagnostic
+#TODO: implement once this pr is merged (extimated 2025.7.x) https://github.com/esphome/issues/issues/6205#issuecomment-2901019015
 # on_update_available:
 #   then:
 #   - if:
@@ -53,6 +54,8 @@ switch:
 # the firmware_update resource checks if an update is available once an hour
 # the interval resource checks every 5 minutes if auto_update_switch is on and if an update is available
 # This is a clunkly work around to to the fact that `on_update_available` appears broken on the firmware_update resource
+# This can go away once this PR is merged: https://github.com/esphome/issues/issues/6205#issuecomment-2901019015
+
 interval:
 - interval: 30min
   then:

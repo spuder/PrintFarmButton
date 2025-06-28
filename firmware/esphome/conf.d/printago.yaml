@@ -149,6 +149,7 @@ script:
               green: 0.0
               blue: 0.0
               effect: none
+              brightness: 90%
           else:
           - if:
               condition:
@@ -164,6 +165,7 @@ script:
                   green: 0.0
                   blue: 1.0
                   effect: none
+                  brightness: 90%
               else:
               - if:
                   condition:
@@ -179,6 +181,7 @@ script:
                       green: 0.0
                       blue: 0.7
                       effect: Pulse
+                      brightness: 90%
                   else:
                   - if:
                       condition:
@@ -194,6 +197,7 @@ script:
                           green: 1.0
                           blue: 0.0
                           effect: none
+                          brightness: 90%
                       else:
                       # Fallback/default
                       - light.turn_on:
@@ -202,6 +206,7 @@ script:
                           green: 1.0
                           blue: 1.0
                           effect: none
+                          brightness: 90%
 - id: mark_printer_ready
   mode: queued
   then:
