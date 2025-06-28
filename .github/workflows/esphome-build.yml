@@ -132,7 +132,7 @@ jobs:
 
           for target in esp32s3 esp32c3; do
             if [ -f "downloaded-artifacts/printfarmbutton-$target/manifest.json" ]; then
-              jq --slurpfile new "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new_build' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+              jq --slurpfile new "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             else
               echo "Warning: manifest for $target not found, creating basic entry"
               chip_family="ESP32"
