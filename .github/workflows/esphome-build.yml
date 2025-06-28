@@ -2,8 +2,8 @@ name: Build ESPHome Firmware
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+*'
   workflow_dispatch:
 
 permissions:
@@ -27,6 +27,22 @@ jobs:
         run: |
           touch firmware/esphome/secrets.yaml || true
       
+      - name: Setup yq
+        uses: vegardit/gha-setup-yq@v1
+
+      - name: Set git sha
+        run: |
+          SUMMARY=$(git log -1 --pretty=%B)
+          SUMMARY="${SUMMARY//'%'/'%25'}"
+          SUMMARY="${SUMMARY//$'\n'/'%0A'}"
+          SUMMARY="${SUMMARY//$'\r'/'%0D'}"
+          echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
+
+      - name: Modify version.yaml
+        run: |
+          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/conf.d/version.yaml
+          cat firmware/conf.d/version.yaml
+
       - name: Build ESP32-S3 firmware
         uses: esphome/build-action@v6
         with:
@@ -95,11 +111,18 @@ jobs:
           cp downloaded-artifacts/printfarmbutton-esp32c3/*.bin firmware/output/ || true
           cp downloaded-artifacts/printfarmbutton-esp32c3/*.md5 firmware/output/ || true
 
+      - name: Get version from git tag or branch
+        id: get_version
+        run: |
+          # Try to get the latest tag, fallback to branch name
+          VERSION=$(git describe --tags --abbrev=0 2>/dev/null || echo ${{ github.ref_name }})
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
+
       - name: Create ESP Web Tools manifest file
         run: |
-          jq -n '{
+          jq -n --arg version "$VERSION" '{
             name: "PrintFarmButton",
-            version: "1.0.0",
+            version: $version,
             builds: [],
             new_install_prompt_erase: true
           }' > firmware/output/manifest.json
@@ -113,7 +136,6 @@ jobs:
               if [ "$target" = "esp32c3" ]; then
                 chip_family="ESP32-C3"
               fi
-              
               jq --arg chip "$chip_family" --arg path "printfarmbutton-$target.bin" \
                 '.builds += [{"chipFamily": $chip, "parts": [{"path": $path, "offset": 0}]}]' \
                 firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
@@ -133,12 +155,13 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # Add all files in firmware/output
+          # Add all files in firmware/output and the updated version.yaml
           git add firmware/output/
+          git add firmware/conf.d/version.yaml
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "Update firmware build [skip ci]"
+            git commit -m "Update firmware build and version.yaml [skip ci]"
             git push
           fi

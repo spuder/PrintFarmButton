@@ -2,6 +2,9 @@ esphome:
   name: printfarmbutton
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
+  project:
+    name: spuder.PrintFarmButton
+    version: ${version}
   on_boot:
     then:
     - light.turn_on:
@@ -17,6 +20,7 @@ packages:
   wifi: !include conf.d/wifi.yaml
   printago: !include conf.d/printago.yaml
   update: !include conf.d/update.yaml
+  version: !include conf.d/version.yaml
 logger:
   # level: VERBOSE
   # logs:
