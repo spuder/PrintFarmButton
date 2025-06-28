@@ -6,7 +6,7 @@
       "chipFamily": "ESP32-S3",
       "ota": {
         "path": "printfarmbutton-esp32s3.ota.bin",
-        "md5": "81f9ceb827d26f412cda65fb6218f33f"
+        "md5": "37a291bd8e3c338caf7a988e895973b7"
       },
       "parts": [
         {
@@ -19,7 +19,7 @@
       "chipFamily": "ESP32-C3",
       "ota": {
         "path": "printfarmbutton-esp32c3.ota.bin",
-        "md5": "17661ff38b0144e06f9afde4f87b3d99"
+        "md5": "5dcd9e0cdbeff7c1221358cc12d09b64"
       },
       "parts": [
         {
