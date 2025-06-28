@@ -81,3 +81,4 @@ text_sensor:
   icon: mdi:new-box
   web_server:
     sorting_group_id: updates
+  update_interval: never
