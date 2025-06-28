@@ -1,23 +1,51 @@
 light:
-  - platform: esp32_rmt_led_strip
-    name: "PrintFarmButton RGB"
-    id: printfarmbutton_rgb
-    chipset: WS2812
-    pin: 1
-    num_leds: 15
-    rgb_order: GRB
-    rmt_channel: 0
-    state_topic:
-    internal: false #set to true to hide
-    restore_mode: ALWAYS_OFF
-    effects:
-      - addressable_rainbow:
-            name: Rainbow
-            speed: 25
-            width: 15
-      - pulse:
-            name: Pulse
-            transition_length: 0.3s
-            max_brightness: 100%
-            min_brightness: 50%
-            update_interval: 0.3s
+- platform: esp32_rmt_led_strip
+  name: "PrintFarmButton RGB"
+  id: printfarmbutton_rgb
+  chipset: WS2812
+  pin: 1
+  num_leds: 13
+  rgb_order: GRB
+  rmt_channel: 0
+  state_topic:
+  internal: false #set to true to hide
+  restore_mode: ALWAYS_OFF
+  effects:
+  - addressable_rainbow:
+      name: Rainbow
+      speed: 25
+      width: 15
+  - pulse:
+      name: Pulse
+      transition_length: 0.3s
+      max_brightness: 100%
+      min_brightness: 50%
+      update_interval: 0.3s
+  # - addressable_scan:
+  #     name: Scan
+  - addressable_lambda:
+      name: Left2Right
+      update_interval: 0.03s # Faster refresh for smoother animation
+      lambda: |-
+        int num_leds = it.size();
+        const int scan_time_ms = 1100; // Keep overall scan speed
+        const int update_interval_ms = scan_time_ms / num_leds;
+        const int num_dots = 2; // Number of moving dot pairs
+        static uint32_t last_update = 0;
+        static int pos = 0;
+        uint32_t now = millis();
+        if (now - last_update > update_interval_ms) {
+          pos++;
+          if (pos >= num_leds) pos = 0;
+          last_update = now;
+        }
+        for (int i = 0; i < num_leds; i++) {
+          it[i] = Color(0, 255, 0); // Green background
+        }
+        // Place 2 pairs of moving dots: white then yellow
+        for (int d = 0; d < num_dots; d++) {
+          int dot_pos = (pos + (d * num_leds) / num_dots) % num_leds;
+          it[dot_pos] = Color(255, 255, 255); // First dot: white
+          int dot_pos2 = (dot_pos + 1) % num_leds;
+          it[dot_pos2] = Color(255, 255, 0); // Second dot: yellow
+        }

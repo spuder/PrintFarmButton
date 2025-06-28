@@ -9,4 +9,12 @@
 [x] all mqtt text boxes should have on_value that checks if values are set, and if they are subscribe to mqtt
 [x] ON mqtt disconnect, turn off led
 [x] Debug why it starts purple pusling on boot
-[ ] Support Red
+[x] Support Red
+[ ] Reduce power consumption to ~300 to ~500
+[ ] Verify how many milliamps p1s usb port suports
+[ ] Add support for downloading updates
+[ ] Implement improv_serial
+[x] Research improv via ble
+[x] Support Downloading mode ("state": "PREPARE", in /printer-stats)
+[ ] Only deploy on git tags
+[ ] Show version in web interface

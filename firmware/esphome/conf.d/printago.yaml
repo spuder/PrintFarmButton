@@ -54,6 +54,17 @@ binary_sensor:
     - script.execute: update_led_color
   internal: false
 
+- platform: template
+  name: "Is Downloading"
+  id: is_downloading
+  lambda: |-
+    return id(is_downloading).state;
+  icon: "mdi:download"
+  internal: false
+  on_state:
+    then:
+    - script.execute: update_led_color
+
 script:
 - id: check_printago_status
   mode: queued
@@ -94,9 +105,11 @@ script:
                   
                   // Extract and set printer name from metadata if available
                   if (doc.containsKey("metadata") && doc["metadata"].containsKey("name")) {
-                    const char* name = doc["metadata"]["name"];
-                    id(printer_name).publish_state(name);
-                    ESP_LOGI("printago", "Set printer name to: %s", name);
+                    const char* name = doc["metadata"]["name"].as<const char*>();
+                    if (name != nullptr) {
+                      ESP_LOGI("printago", "Set printer name to: %s", name);
+                      id(printer_name).publish_state(name);
+                    }
                   }
                   
                   id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
@@ -128,14 +141,15 @@ script:
       condition:
         not:
         - lambda: 'return id(printer_is_online_sensor).state;'
-      then: # - light.turn_on:
+      then: # LED white on offline
 
+      # - light.turn_on:
       #     id: printfarmbutton_rgb
       #     red: 1.0
       #     green: 1.0
       #     blue: 1.0
       #     effect: none
-      # LED white on offline is now commented out
+      #     brightness: 90%
       else:
       - if:
           condition:
@@ -154,59 +168,69 @@ script:
           - if:
               condition:
                 and:
-                - lambda: 'return id(printer_is_online_sensor).state;'
-                - lambda: 'return id(printer_confirmed_ready_sensor).state;'
-                - lambda: 'return id(printer_is_available_sensor).state;'
+                - lambda: 'return id(is_downloading).state;'
               then:
-              # Blue (Ready)
               - light.turn_on:
                   id: printfarmbutton_rgb
                   red: 0.0
-                  green: 0.0
-                  blue: 1.0
-                  effect: none
+                  green: 1.0
+                  blue: 0.0
+                  effect: Left2Right
                   brightness: 90%
               else:
               - if:
                   condition:
                     and:
-                    - lambda: 'return id(printer_is_online_sensor).state;'
-                    - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                    - lambda: 'return id(printer_confirmed_ready_sensor).state;'
                     - lambda: 'return id(printer_is_available_sensor).state;'
                   then:
-                  # Magenta (Set Ready)
+                  # Blue (Ready)
                   - light.turn_on:
                       id: printfarmbutton_rgb
-                      red: 0.9
+                      red: 0.0
                       green: 0.0
-                      blue: 0.7
-                      effect: Pulse
+                      blue: 1.0
+                      effect: none
                       brightness: 90%
                   else:
                   - if:
                       condition:
                         and:
-                        - lambda: 'return id(printer_is_online_sensor).state;'
-                        - lambda: 'return !id(printer_is_available_sensor).state;'
                         - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                        - lambda: 'return id(printer_is_available_sensor).state;'
                       then:
-                      # Green (Busy)
+                      # Magenta (Set Ready)
                       - light.turn_on:
                           id: printfarmbutton_rgb
-                          red: 0.0
-                          green: 1.0
-                          blue: 0.0
-                          effect: none
+                          red: 0.9
+                          green: 0.0
+                          blue: 0.7
+                          effect: Pulse
                           brightness: 90%
                       else:
-                      # Fallback/default
-                      - light.turn_on:
-                          id: printfarmbutton_rgb
-                          red: 1.0
-                          green: 1.0
-                          blue: 1.0
-                          effect: none
-                          brightness: 90%
+                      - if:
+                          condition:
+                            and:
+                            - lambda: 'return !id(printer_is_available_sensor).state;'
+                            - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                          then:
+                          # Green (Busy)
+                          - light.turn_on:
+                              id: printfarmbutton_rgb
+                              red: 0.0
+                              green: 1.0
+                              blue: 0.0
+                              effect: none
+                              brightness: 90%
+                          else:
+                          # Fallback/default
+                          - light.turn_on:
+                              id: printfarmbutton_rgb
+                              red: 1.0
+                              green: 1.0
+                              blue: 1.0
+                              effect: none
+                              brightness: 90%
 - id: mark_printer_ready
   mode: queued
   then:
@@ -329,92 +353,94 @@ text:
         ESP_LOGI("mqtt", "Printer ID changing from '%s' to '%s'", previous_printer_id.c_str(), new_printer_id.c_str());
 
         // Check if we should connect/reconnect to MQTT
-        if (!new_printer_id.empty() && !id(username_text).state.empty() && !id(mqtt_endpoint_text).state.empty()) {
-          ESP_LOGI("mqtt", "Both username, printer ID, and mqtt_endpoint are set, enabling MQTT");
-          id(clear_printago_status).execute();
-          id(check_printago_status).execute();
-          id(mqtt_client_id).enable();
-        } else {
+        if (new_printer_id.empty() || id(username_text).state.empty() || id(mqtt_endpoint_text).state.empty()) {
           ESP_LOGI("mqtt", "Username, printer ID, or mqtt_endpoint missing, disabling MQTT");
           id(clear_printago_status).execute();
           id(mqtt_client_id).disable();
           return;
         }
 
-        // Unsubscribe from previous topic first
+        ESP_LOGI("mqtt", "All required fields set, enabling MQTT");
+        id(clear_printago_status).execute();
+        id(check_printago_status).execute();
+        id(mqtt_client_id).enable();
+
+        // Unsubscribe from previous topics
         if (!previous_printer_id.empty() && !id(username_text).state.empty()) {
           std::string old_topic = "stores/" + id(username_text).state + "/printer-stats/" + previous_printer_id;
           std::string alt_old_topic = "stores/" + id(username_text).state + "/entities/printers/" + previous_printer_id;
-          ESP_LOGI("mqtt", "Unsubscribing from previous topic: %s", old_topic.c_str());
+          ESP_LOGI("mqtt", "Unsubscribing from previous topics");
           id(mqtt_client_id).unsubscribe(old_topic);
           id(mqtt_client_id).unsubscribe(alt_old_topic);
         }
 
-        // Store the new value as the "previous" for next time
+        // Store the new value
         id(printer_id_previous).publish_state(new_printer_id);
 
-        // Subscribe to new topic only if new printer ID is not empty
-        if (!new_printer_id.empty() && !id(username_text).state.empty() && !id(mqtt_endpoint_text).state.empty()) {
-          std::string topic = "stores/" + id(username_text).state + "/printer-stats/" + new_printer_id;
-          ESP_LOGI("mqtt", "Subscribing to new topic: %s", topic.c_str());
-          
-          // Capture new_printer_id by value in the lambda
-          id(mqtt_client_id).subscribe_json(topic, [new_printer_id](const std::string &topic, JsonObject root) {
-            ESP_LOGV("mqtt", "Received JSON on topic %s", topic.c_str());
-            bool is_online = root.containsKey("isOnline") ? root["isOnline"] : false;
-            bool is_available = root.containsKey("isAvailable") ? root["isAvailable"] : false;
-            
-            // Extract and set printer name from metadata if available
-            if (root["metadata"].containsKey("name")) {
-              const char* name = root["name"];
-              id(printer_name).publish_state(name);
-              ESP_LOGV("mqtt", "Set printer name to: %s", name);
-            }
+        // Subscribe to printer stats topic
+        std::string stats_topic = "stores/" + id(username_text).state + "/printer-stats/" + new_printer_id;
+        ESP_LOGI("mqtt", "Subscribing to topic: %s", stats_topic.c_str());
 
-            // Check for errors and warnings in data.health.errors and data.health.warnings
-            bool has_error = false;
-            bool has_warning = false;
-            if (root.containsKey("data") && root["data"].containsKey("health")) {
-              JsonObject health = root["data"]["health"];
-              if (health.containsKey("errors")) {
-                JsonArray errors = health["errors"].as<JsonArray>();
-                has_error = errors.size() > 0;
-              }
-              if (health.containsKey("warnings")) {
-                JsonArray warnings = health["warnings"].as<JsonArray>();
-                has_warning = warnings.size() > 0;
+        id(mqtt_client_id).subscribe_json(stats_topic, [](const std::string &topic, JsonObject root) {
+          ESP_LOGV("mqtt", "Received JSON on stats topic");
+          
+          // Handle basic status - simple approach
+          id(printer_is_online_sensor).publish_state(root.containsKey("isOnline") ? (bool)root["isOnline"] : false);
+          id(printer_is_available_sensor).publish_state(root.containsKey("isAvailable") ? (bool)root["isAvailable"] : false);
+          
+          // Handle printer name
+          if (root.containsKey("metadata")) {
+            JsonObject metadata = root["metadata"];
+            if (metadata.containsKey("name")) {
+              const char* name = metadata["name"];
+              if (name != nullptr) {
+                id(printer_name).publish_state(name);
               }
             }
-            id(printer_has_error_sensor).publish_state(has_error);
-            id(printer_has_warning_sensor).publish_state(has_warning);
+          }
 
-            // Only update the relevant sensors from this topic
-            id(printer_is_online_sensor).publish_state(is_online);
-            id(printer_is_available_sensor).publish_state(is_available);
-            ESP_LOGV("mqtt", "Parsed isOnline: %s, isAvailable: %s, has_error: %s, has_warning: %s", is_online ? "true" : "false", is_available ? "true" : "false", has_error ? "true" : "false", has_warning ? "true" : "false");
-          });
-          
-          // Additional subscription to stores/$USERNAME/entities/printers for confirmedReady
-          std::string entities_topic = "stores/" + id(username_text).state + "/entities/printers";
-          ESP_LOGI("mqtt", "Subscribing to entities topic: %s", entities_topic.c_str());
-          
-          // Capture new_printer_id by value in this lambda too
-          id(mqtt_client_id).subscribe_json(entities_topic, [new_printer_id](const std::string &topic, JsonObject root) {
-            // Parse for entities.<printer_id>.confirmedReady
-            if (root.containsKey("entities")) {
-              JsonObject entities = root["entities"];
-              if (entities.containsKey(new_printer_id.c_str())) {
-                JsonObject printer_obj = entities[new_printer_id.c_str()];
-                if (printer_obj.containsKey("confirmedReady")) {
-                  bool confirmed_ready = printer_obj["confirmedReady"];
-                  id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
-                  ESP_LOGV("mqtt", "Parsed entities.%s.confirmedReady: %s", new_printer_id.c_str(), confirmed_ready ? "true" : "false");
-                }
+          // Handle health status
+          bool error_state = false;
+          bool warning_state = false;
+          if (root.containsKey("data")) {
+            JsonObject data = root["data"];
+            if (data.containsKey("health")) {
+              JsonObject health = data["health"];
+              error_state = health.containsKey("errors") && !health["errors"].isNull();
+              warning_state = health.containsKey("warnings") && !health["warnings"].isNull();
+            }
+          }
+          id(printer_has_error_sensor).publish_state(error_state);
+          id(printer_has_warning_sensor).publish_state(warning_state);
+
+          // Handle downloading state
+          bool download_state = false;
+          if (root.containsKey("state")) {
+            const char* state = root["state"];
+            if (state != nullptr && strcmp(state, "PREPARE") == 0) {
+              download_state = true;
+            }
+          }
+          id(is_downloading).publish_state(download_state);
+        });
+
+        // Subscribe to entities topic for confirmedReady
+        std::string entities_topic = "stores/" + id(username_text).state + "/entities/printers";
+        ESP_LOGI("mqtt", "Subscribing to entities topic: %s", entities_topic.c_str());
+
+        id(mqtt_client_id).subscribe_json(entities_topic, [new_printer_id](const std::string &topic, JsonObject root) {
+          bool ready_state = false;
+          if (root.containsKey("entities")) {
+            JsonObject entities = root["entities"];
+            if (entities.containsKey(new_printer_id.c_str())) {
+              JsonObject printer_obj = entities[new_printer_id.c_str()];
+              if (printer_obj.containsKey("confirmedReady")) {
+                ready_state = (bool)printer_obj["confirmedReady"];
               }
             }
-          });
-        }
-
+          }
+          id(printer_confirmed_ready_sensor).publish_state(ready_state);
+        });
 button:
 - platform: template
   name: "Check Printago Status"
