@@ -1,12 +1,12 @@
 {
   "name": "PrintFarmButton",
-  "version": "v1.0.7",
+  "version": "1.0.8",
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "ota": {
         "path": "printfarmbutton-esp32s3.ota.bin",
-        "md5": "11b0752abbb83537cceb36a08333d25d"
+        "md5": "1477bd2811012aebf7651bec2b59efaf"
       },
       "parts": [
         {
@@ -19,7 +19,7 @@
       "chipFamily": "ESP32-C3",
       "ota": {
         "path": "printfarmbutton-esp32c3.ota.bin",
-        "md5": "081a0543d978e0a377c1a2263668db93"
+        "md5": "76f38ccf5585d5d3edfa08ba76390fd8"
       },
       "parts": [
         {
