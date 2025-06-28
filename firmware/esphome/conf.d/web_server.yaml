@@ -6,6 +6,8 @@ web_server:
   sorting_groups:
   - id: printago
     name: Printago
+  - id: updates
+    name: Updates
   # - id: diagnostic
   #   name: Diagnostic
 

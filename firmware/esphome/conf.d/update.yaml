@@ -1,0 +1,66 @@
+button:
+- platform: template
+  id: update_firmware_button
+  name: Update Firmware
+  state_topic:
+  web_server:
+    sorting_group_id: updates
+  entity_category: diagnostic
+  icon: mdi:cloud-upload
+  on_press:
+    then:
+    - update.perform: firmware_update
+
+- platform: template
+  name: Check for Updates
+  state_topic:
+  web_server:
+    sorting_group_id: updates
+  entity_category: diagnostic
+  icon: mdi:cloud-check
+  on_press:
+    then:
+    - component.update: firmware_update
+
+update:
+- platform: http_request
+  id: firmware_update
+  name: Firmware Update Available
+  source: https://raw.githubusercontent.com/spuder/PrintFarmButton/refs/heads/main/firmware/output/manifest.json
+  update_interval: 1h #Check (not install) updates every 1 hours
+  state_topic:
+  web_server:
+    sorting_group_id: updates
+  entity_category: diagnostic
+# on_update_available:
+#   then:
+#   - if:
+#       condition:
+#         switch.is_on: auto_update_switch
+#       then:
+#       - logger.log: "Auto update enabled, performing update."
+#       - update.perform: firmware_update
+
+switch:
+- platform: template
+  name: "Auto Update"
+  id: auto_update_switch
+  optimistic: true
+  web_server:
+    sorting_group_id: updates
+  icon: mdi:autorenew
+
+# the firmware_update resource checks if an update is available once an hour
+# the interval resource checks every 5 minutes if auto_update_switch is on and if an update is available
+# This is a clunkly work around to to the fact that `on_update_available` appears broken on the firmware_update resource
+interval:
+- interval: 30min
+  then:
+  - if:
+      condition:
+        and:
+        - switch.is_on: auto_update_switch
+        - update.is_available: firmware_update
+      then:
+      - logger.log: "Auto update enabled, performing update."
+      - update.perform: firmware_update

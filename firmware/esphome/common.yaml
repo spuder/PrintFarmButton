@@ -16,7 +16,7 @@ packages:
   button: !include conf.d/button.yaml
   wifi: !include conf.d/wifi.yaml
   printago: !include conf.d/printago.yaml
-
+  update: !include conf.d/update.yaml
 logger:
   # level: VERBOSE
   # logs:
