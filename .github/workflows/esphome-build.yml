@@ -40,8 +40,8 @@ jobs:
 
       - name: Modify version.yaml
         run: |
-          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/conf.d/version.yaml
-          cat firmware/conf.d/version.yaml
+          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
+          cat firmware/esphome/conf.d/version.yaml
 
       - name: Build ESP32-S3 firmware
         uses: esphome/build-action@v6
@@ -157,7 +157,7 @@ jobs:
           
           # Add all files in firmware/output and the updated version.yaml
           git add firmware/output/
-          git add firmware/conf.d/version.yaml
+          git add firmware/esphome/conf.d/version.yaml
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
