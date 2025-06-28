@@ -12,9 +12,12 @@
 [x] Support Red
 [ ] Reduce power consumption to ~300 to ~500
 [ ] Verify how many milliamps p1s usb port suports
-[ ] Add support for downloading updates
+[x] Add support for downloading updates
 [ ] Implement improv_serial
 [x] Research improv via ble
 [x] Support Downloading mode ("state": "PREPARE", in /printer-stats)
 [ ] Only deploy on git tags
 [ ] Show version in web interface
+[ ] Check for firmwrae updates on boot
+[ ] Make auto update permenant so it survives updates
+[ ] Why does it always say there is an update available? 
