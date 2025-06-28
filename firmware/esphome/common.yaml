@@ -31,14 +31,8 @@ ota:
 http_request:
   verify_ssl: false
 
-esp32_improv:
-  authorizer: none
-
 improv_serial:
   next_url: http://{{device_name}}.local
-  # substitutions:
-  #   board_type: esp32dev
-  #   rgb_led_pin: '4'
 
 api:
   reboot_timeout: 0s

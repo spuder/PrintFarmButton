@@ -84,11 +84,16 @@ To flash, ensure you have the `esphome` cli installed (`brew install esphome`)
 
 ```bash
 cd firmware/esphome
-esphome run config.yaml
+make s3   # For ESP32-S3 boards
+make c3   # For ESP32-C3 boards
 ```
 
-To update remotely for a specific board type (e.g., ESP32-C3), set the BOARD_TYPE environment variable:
+To clean build artifacts:
+```bash
+make clean
+```
 
+You can still use the BOARD_TYPE environment variable and esphome directly if needed:
 ```bash
 export BOARD_TYPE=esp32-c3
 esphome run config.yaml --device printfarmbutton-xxxx
@@ -98,27 +103,32 @@ Or in a single command:
 BOARD_TYPE=esp32-c3 esphome run config.yaml --device printfarmbutton-xxxx
 ```
 
-## Building Firmware
+## ESPHome Makefile Usage
 
-This project supports multiple ESP32 board types (S3 and C3) using a modular ESPHome configuration.
+This project provides a Makefile for building and flashing ESPHome firmware for PrintFarmButton devices.
 
-### Prerequisites
-- Python 3.11+
-- [ESPHome](https://esphome.io/) installed (`pip install esphome`)
+### Usage
 
-### Build for ESP32-S3
-```
-BOARD_TYPE=esp32-s3 esphome compile firmware/esphome/config.yaml
-```
+- **Build only:**
+  - `make build-s3` — Compile firmware for ESP32-S3
+  - `make build-c3` — Compile firmware for ESP32-C3
 
-### Build for ESP32-C3
-```
-BOARD_TYPE=esp32-c3 esphome compile firmware/esphome/config.yaml
-```
+- **Build and flash (run):**
+  - `make run-s3` — Compile and upload firmware to ESP32-S3
+  - `make run-c3` — Compile and upload firmware to ESP32-C3
 
-### Output
-- Compiled binaries will be found in `.esphome/build/` or as moved by the GitHub Actions workflow to `firmware/build/`.
-- The correct binary for each board is referenced in `firmware/build/manifest.json` for use with ESP Web Tools.
+- **Legacy aliases:**
+  - `make s3` — Alias for `make run-s3`
+  - `make c3` — Alias for `make run-c3`
 
-### GitHub Actions
-Firmware for both boards is built automatically on each push to `main` via GitHub Actions. Artifacts and the manifest are committed to `firmware/build/`.
+- **Clean build artifacts:**
+  - `make clean` — Remove build and output files
+
+### Notes
+- You must have [ESPHome](https://esphome.io/) installed and available in your PATH.
+- Edit the appropriate YAML files in `firmware/esphome/` to configure your device.
+- Output binaries are placed in `firmware/output/`.
+
+---
+
+For more details, see the comments in the Makefile and the ESPHome documentation.
