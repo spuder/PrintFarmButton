@@ -154,14 +154,15 @@ jobs:
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # Add all files in firmware/output and the updated version.yaml
+          git stash push -m "Stash before switching to main"
+          git checkout main
+          git pull origin main
+          git stash apply || true
           git add firmware/output/
           git add firmware/esphome/conf.d/version.yaml
-          
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
             git commit -m "Update firmware build and version.yaml [skip ci]"
-            git push
+            git push origin main
           fi
