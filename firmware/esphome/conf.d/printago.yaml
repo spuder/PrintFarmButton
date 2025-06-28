@@ -407,8 +407,12 @@ text:
             JsonObject data = root["data"];
             if (data.containsKey("health")) {
               JsonObject health = data["health"];
-              error_state = health.containsKey("errors") && health["errors"].size() > 0;
-              warning_state = health.containsKey("warnings") && health["warnings"].size() > 0;
+              if (health.containsKey("errors") && health["errors"].is<JsonArray>() && health["errors"].size() > 0) {
+                error_state = true;
+              }
+              if (health.containsKey("warnings") && health["warnings"].is<JsonArray>() && health["warnings"].size() > 0) {
+                warning_state = true;
+              }
             }
           }
           id(printer_has_error_sensor).publish_state(error_state);
