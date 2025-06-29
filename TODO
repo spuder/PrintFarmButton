@@ -20,4 +20,4 @@
 [ ] Show version in web interface
 [ ] Check for firmwrae updates on boot
 [ ] Make auto update permenant so it survives updates
-[ ] Why does it always say there is an update available? 
+[x] Why does it always say there is an update available? 

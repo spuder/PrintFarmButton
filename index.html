@@ -153,6 +153,71 @@
       text-align: center;
       margin-top: 20px;
     }
+
+    /* Printago Configuration section improvements */
+    .section.alt .container {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 12px #0001;
+      padding: 2em 1.5em 2em 1.5em;
+      margin-top: 2em;
+      max-width: 430px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .section.alt label {
+      font-weight: 600;
+      color: #1976d2;
+      margin-bottom: 0.2em;
+    }
+    .section.alt input[type="text"] {
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      background: #f9f9fb;
+      font-size: 1em;
+      color: #222;
+      margin-top: 0.2em;
+      margin-bottom: 0.8em;
+      padding: 0.6em 1em;
+      transition: border 0.2s;
+      min-width: 0;
+      max-width: 100%;
+      box-sizing: border-box;
+    }
+    .section.alt input[type="text"]:focus {
+      border: 1.5px solid #1976d2;
+      outline: none;
+      background: #fff;
+    }
+    .section.alt .esp32-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5em;
+      margin-bottom: 1em;
+      max-width: 100%;
+    }
+    .section.alt .esp32-row span,
+    .section.alt .esp32-row input {
+      max-width: 100%;
+      min-width: 0;
+    }
+    .section.alt .mode-btn {
+      background: #fff;
+      color: #1976d2;
+      font-weight: bold;
+      padding: 0.5em 2em;
+      border-radius: 30px;
+      border: none;
+      box-shadow: 0 2px 8px #0002;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+      outline: none;
+      margin-top: 1em;
+    }
+    .section.alt .mode-btn:hover, .section.alt .mode-btn:focus {
+      background: #1976d2;
+      color: #fff;
+    }
   </style>
 </head>
 <body>
@@ -176,9 +241,7 @@
 
         <div id="auto-fields">
           <div class="install-container">
-            <!-- <script type="module" src="https://cdn.jsdelivr.net/npm/improv-wifi-sdk@1.4.0/dist/launch-button.min.js"></script> -->
-              <!-- <script src="./serial-launch-button.js" type="module"></script>             -->
-                <script type="module" src="https://cdn.jsdelivr.net/npm/improv-wifi-serial-sdk@2.5.0/+esm"></script>
+              <script type="module" src="https://cdn.jsdelivr.net/npm/improv-wifi-serial-sdk@2.5.0/+esm"></script>
 
             <div class="button-row">
               <improv-wifi-serial-launch-button></improv-wifi-serial-launch-button>
@@ -208,17 +271,19 @@
   <section class="section alt">
     <div class="container">
       <h2>Printago Configuration</h2>
-      <label>ESP32 Name
-        <input type="text" id="esp32-name" placeholder="ESP32 Name" readonly />
-      </label>
+      <label>ESP32 Name</label>
+      <div class="esp32-row">
+        <span style="flex-shrink:0; color:#555;">http://</span>
+        <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
+        <span style="flex-shrink:0; color:#555;">.local</span>
+      </div>
       <label>API Key
         <input type="text" id="api-key" placeholder="ApiKey ..." />
       </label>
       <label>Store ID
         <input type="text" id="store-id" placeholder="Store ID" />
       </label>
-
-      <button id="fetch-printers">Fetch Printers</button>
+      <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
       <div id="printer-list" class="printer-list"></div>
     </div>
   </section>
@@ -259,52 +324,95 @@
     autoFields.style.display = 'none';
   };
 
-  // Aggressive polling: search all text nodes in dialog and shadow DOM for ESP32 name
+  // ESP32 Name detection logic
   (function pollEsp32NameAggressive() {
-  const esp32NameInput = document.getElementById('esp32-name');
-  let lastName = '';
-  function findEsp32NameInNode(node) {
-    if (!node) return null;
-    if (node.nodeType === Node.TEXT_NODE) {
-      const text = node.textContent.trim();
-      if (/^printfarmbutton-[a-zA-Z0-9]+$/.test(text)) {
-        return text;
+    const esp32NameInput = document.getElementById('esp32-name');
+    let lastName = '';
+    function findEsp32NameInNode(node) {
+      if (!node) return null;
+      if (node.nodeType === Node.TEXT_NODE) {
+        const text = node.textContent.trim();
+        if (/^printfarmbutton-[a-zA-Z0-9]+$/.test(text)) {
+          return text;
+        }
       }
-    }
-    // Search children
-    if (node.childNodes && node.childNodes.length) {
-      for (let i = 0; i < node.childNodes.length; i++) {
-        const found = findEsp32NameInNode(node.childNodes[i]);
+      if (node.childNodes && node.childNodes.length) {
+        for (let i = 0; i < node.childNodes.length; i++) {
+          const found = findEsp32NameInNode(node.childNodes[i]);
+          if (found) return found;
+        }
+      }
+      if (node.shadowRoot) {
+        const found = findEsp32NameInNode(node.shadowRoot);
         if (found) return found;
       }
+      return null;
     }
-    // Search shadow DOM
-    if (node.shadowRoot) {
-      const found = findEsp32NameInNode(node.shadowRoot);
-      if (found) return found;
+    setInterval(function() {
+      const dialog = document.querySelector('improv-wifi-serial-provision-dialog');
+      let name = '';
+      if (dialog) {
+        name = findEsp32NameInNode(dialog) || '';
+      }
+      if (name && name !== lastName) {
+        console.log('Detected ESP32 name:', name);
+        // Only update if the field is empty or matches the last detected name
+        if (!esp32NameInput.value || esp32NameInput.value === lastName) {
+          esp32NameInput.value = name;
+        }
+        lastName = name;
+      }
+    }, 200);
+  })();
+
+  // Fetch Printers button logic
+const fetchBtn = document.getElementById('fetch-printers');
+if (fetchBtn) {
+  fetchBtn.onclick = async function (e) {
+    e.preventDefault();
+    // Always get the latest values from the input fields at click time
+    const apiKeyInput = document.getElementById('api-key');
+    const storeIdInput = document.getElementById('store-id');
+    const esp32NameInput = document.getElementById('esp32-name');
+    const printerList = document.getElementById('printer-list');
+    const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+    const storeId = storeIdInput ? storeIdInput.value.trim() : '';
+    const esp32Name = esp32NameInput ? esp32NameInput.value.trim() : '';
+    printerList.innerHTML = '';
+    if (!apiKey || !storeId) {
+      printerList.innerHTML = '<div class="error">API Key and Store ID are required.</div>';
+      return;
     }
-    return null;
-  }
-  setInterval(function() {
-    const dialog = document.querySelector('improv-wifi-serial-provision-dialog');
-    let name = '';
-    if (dialog) {
-      name = findEsp32NameInNode(dialog) || '';
+    try {
+      const resp = await fetch(`https://api.printago.io/v1/printers`, {
+        headers: {
+          'authorization': `ApiKey ${apiKey}`,
+          'x-printago-storeid': storeId
+        }
+      });
+      if (!resp.ok) {
+        throw new Error('API error: ' + resp.status);
+      }
+      const data = await resp.json();
+      if (!Array.isArray(data)) {
+        printerList.innerHTML = '<div class="error">Unexpected API response.</div>';
+        return;
+      }
+      if (data.length === 0) {
+        printerList.innerHTML = '<div>No printers found.</div>';
+        return;
+      }
+      printerList.innerHTML = data.map(p =>
+        `<div class="printer-item">
+          <div class="printer-label">${p.name || 'Printer'}</div>
+          <div class="printer-id">ID: ${p.id || ''}</div>
+        </div>`
+      ).join('');
+    } catch (err) {
+      printerList.innerHTML = `<div class="error">${err.message}</div>`;
     }
-    if (name && name !== lastName) {
-      console.log('Detected ESP32 name:', name);
-    }
-    if (name !== lastName) {
-      esp32NameInput.value = name;
-      lastName = name;
-    }
-    // Clear field if dialog closed
-    if (!dialog && lastName) {
-      esp32NameInput.value = '';
-      lastName = '';
-    }
-  }, 200);
-})();
+  };
+}
   </script>
 </body>
 </html>
