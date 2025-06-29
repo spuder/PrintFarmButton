@@ -1,0 +1,17 @@
+<!-- Site Head -->
+<head>
+  <meta charset="utf-8" />
+  <title>{{ page.title | strip_html }}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="shortcut icon" href="{{ site.baseurl }}/images/favicon.png" title="Favicon" />
+  <link href="https://fonts.googleapis.com/css?family=Lato:300,400,700" rel="stylesheet">
+
+  <!-- Importing Styles -->
+  <link rel="stylesheet" href="{{ site.baseurl }}/css/style.css">
+
+  {% if site.head_scripts %}
+    {% for script in site.head_scripts %}
+      <script src="{{ script }}"></script>
+    {% endfor %}
+  {% endif %}
+</head>

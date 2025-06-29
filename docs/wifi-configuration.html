@@ -1,0 +1,19 @@
+---
+layout: page
+permalink: /wifi-configuration/
+title: Wifi Configuration
+---
+
+<section class="wifi-config-section">
+  <div class="container" style="text-align:center; margin-top:3em;">
+    <h2>Wifi Configuration</h2>
+    <improv-wifi-serial-launch-button>
+      <button slot='activate'>Start provisioning!</button>
+      <span slot='unsupported'>Your browser does not support provisioning.</span>
+    </improv-wifi-serial-launch-button>
+  </div>
+</section>
+
+<script type="module">
+  import 'https://unpkg.com/@improv-wifi/sdk-serial/dist/web/index.js?module';
+</script>
