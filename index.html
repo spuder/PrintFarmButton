@@ -261,7 +261,7 @@
             <li>Join WiFi</li>
             <li>Navigate to <code>http://192.168.4.1</code></li>
             <li>Select WiFi network</li>
-          </ol>
+          </div>
         </div>
       </form>
       <div class="status" id="status"></div>
@@ -271,34 +271,33 @@
   <section class="section alt">
     <div class="container">
       <h2>Printago Configuration</h2>
-      <label>ESP32 Name</label>
-      <div class="esp32-row">
-        <span style="flex-shrink:0; color:#555;">http://</span>
-        <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
-        <span style="flex-shrink:0; color:#555;">.local</span>
-      </div>
       <label>Store ID
         <input type="text" id="store-id" placeholder="Store ID" />
       </label>
       <label>API Key
         <input type="text" id="api-key" placeholder="ApiKey ..." />
       </label>
-
       <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
+      <div id="printer-list" class="printer-list"></div>
       <label for="printer-select" style="margin-top:1em;">Printers</label>
       <select id="printer-select" style="width:100%;padding:0.6em 1em;margin-top:0.2em;margin-bottom:0.8em;border-radius:6px;border:1px solid #d0d7de;background:#f9f9fb;font-size:1em;color:#222;max-width:100%;box-sizing:border-box;"></select>
+      <label>ESP32 Name</label>
+      <div class="esp32-row">
+        <span style="flex-shrink:0; color:#555;">http://</span>
+        <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
+        <span style="flex-shrink:0; color:#555;">.local</span>
+      </div>
       <button id="configure-btn" class="mode-btn" style="margin-top:1em;background:#ccc;color:#888;cursor:not-allowed;" disabled>Configure</button>
+      <details id="curl-details" style="margin:1.5em 0;">
+        <summary style="cursor:pointer;font-weight:bold;">curl</summary>
+        <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:1em;"></pre>
+      </details>
       <details style="margin:1.5em 0;">
         <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
         <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
           <strong>Privacy Notice:</strong> All data lives in this browser window and is processed client side. No data is uploaded or stored. We respect your privacy.
         </p>
       </details>
-      <details id="curl-details" style="margin:1.5em 0;">
-        <summary style="cursor:pointer;font-weight:bold;">curl</summary>
-        <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:1em;"></pre>
-      </details>
-      <div id="printer-list" class="printer-list"></div>
     </div>
   </section>
 
@@ -518,8 +517,8 @@ function getCurlCommands() {
   const esp32Host = esp32Name ? `${esp32Name}.local` : '<esp32>.local';
   return [
     `curl "http://${esp32Host}/text/username/set?value=${storeId}" -X POST`,
-    `curl -X POST "http://${esp32Host}/text/api_key/set?value=${apiKey}"`,
-    `curl -X POST "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}"`
+    `curl "http://${esp32Host}/text/api_key/set?value=${apiKey}" -X POST`,
+    `curl "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}" -X POST`
   ].join('\n');
 }
 
