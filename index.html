@@ -249,7 +249,7 @@
             <details style="margin:1.5em 0;">
               <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
               <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
-                <strong>Privacy Notice:</strong> No data is stored or sent to any server. All WiFi credentials and device information remain on your computer and are only used within this webpage for device configuration. Your privacy and security are fully preserved.
+                <strong>Privacy Notice:</strong> All data lives in this browser window and is processed client side. No data is uploaded or stored. We respect your privacy.
               </p>
             </details>
           </div>
@@ -284,6 +284,15 @@
         <input type="text" id="store-id" placeholder="Store ID" />
       </label>
       <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
+      <label for="printer-select" style="margin-top:1em;">Printers</label>
+      <select id="printer-select" style="width:100%;padding:0.6em 1em;margin-top:0.2em;margin-bottom:0.8em;border-radius:6px;border:1px solid #d0d7de;background:#f9f9fb;font-size:1em;color:#222;max-width:100%;box-sizing:border-box;"></select>
+      <button id="configure-btn" class="mode-btn" style="margin-top:1em;background:#ccc;color:#888;cursor:not-allowed;" disabled>Configure</button>
+      <details style="margin:1.5em 0;">
+        <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
+        <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
+          <strong>Privacy Notice:</strong> All data lives in this browser window and is processed client side. No data is uploaded or stored. We respect your privacy.
+        </p>
+      </details>
       <div id="printer-list" class="printer-list"></div>
     </div>
   </section>
@@ -367,18 +376,43 @@
 
   // Fetch Printers button logic
 const fetchBtn = document.getElementById('fetch-printers');
+const printerSelect = document.getElementById('printer-select');
+const configureBtn = document.getElementById('configure-btn');
+const esp32NameInput = document.getElementById('esp32-name');
+
+function updateConfigureBtnState() {
+  const esp32Name = esp32NameInput.value.trim();
+  const printerSelected = printerSelect && printerSelect.value;
+  if (esp32Name && printerSelected) {
+    configureBtn.disabled = false;
+    configureBtn.style.background = '';
+    configureBtn.style.color = '';
+    configureBtn.style.cursor = '';
+  } else {
+    configureBtn.disabled = true;
+    configureBtn.style.background = '#ccc';
+    configureBtn.style.color = '#888';
+    configureBtn.style.cursor = 'not-allowed';
+  }
+}
+
+if (esp32NameInput) {
+  esp32NameInput.addEventListener('input', updateConfigureBtnState);
+}
+if (printerSelect) {
+  printerSelect.addEventListener('change', updateConfigureBtnState);
+}
+
 if (fetchBtn) {
   fetchBtn.onclick = async function (e) {
     e.preventDefault();
-    // Always get the latest values from the input fields at click time
     const apiKeyInput = document.getElementById('api-key');
     const storeIdInput = document.getElementById('store-id');
-    const esp32NameInput = document.getElementById('esp32-name');
     const printerList = document.getElementById('printer-list');
     const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
     const storeId = storeIdInput ? storeIdInput.value.trim() : '';
-    const esp32Name = esp32NameInput ? esp32NameInput.value.trim() : '';
     printerList.innerHTML = '';
+    printerSelect.innerHTML = '';
     if (!apiKey || !storeId) {
       printerList.innerHTML = '<div class="error">API Key and Store ID are required.</div>';
       return;
@@ -402,17 +436,19 @@ if (fetchBtn) {
         printerList.innerHTML = '<div>No printers found.</div>';
         return;
       }
-      printerList.innerHTML = data.map(p =>
-        `<div class="printer-item">
-          <div class="printer-label">${p.name || 'Printer'}</div>
-          <div class="printer-id">ID: ${p.id || ''}</div>
-        </div>`
-      ).join('');
+      // Populate dropdown
+      printerSelect.innerHTML = '<option value="">Select a printer...</option>' +
+        data.map(p => `<option value="${p.id}">${p.name || 'Printer'} (${p.id || ''})</option>`).join('');
+      printerList.innerHTML = '';
+      updateConfigureBtnState();
     } catch (err) {
       printerList.innerHTML = `<div class="error">${err.message}</div>`;
     }
   };
 }
+
+// Initial state
+updateConfigureBtnState();
   </script>
 </body>
 </html>
