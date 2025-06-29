@@ -207,13 +207,17 @@
 
   <section class="section alt">
     <div class="container">
-      <h2>Printago API Test</h2>
+      <h2>Printago Configuration</h2>
+      <label>ESP32 Name
+        <input type="text" id="esp32-name" placeholder="ESP32 Name" readonly />
+      </label>
       <label>API Key
         <input type="text" id="api-key" placeholder="ApiKey ..." />
       </label>
       <label>Store ID
         <input type="text" id="store-id" placeholder="Store ID" />
       </label>
+
       <button id="fetch-printers">Fetch Printers</button>
       <div id="printer-list" class="printer-list"></div>
     </div>
@@ -254,7 +258,53 @@
     manualFields.style.display = '';
     autoFields.style.display = 'none';
   };
-</script>
 
+  // Aggressive polling: search all text nodes in dialog and shadow DOM for ESP32 name
+  (function pollEsp32NameAggressive() {
+  const esp32NameInput = document.getElementById('esp32-name');
+  let lastName = '';
+  function findEsp32NameInNode(node) {
+    if (!node) return null;
+    if (node.nodeType === Node.TEXT_NODE) {
+      const text = node.textContent.trim();
+      if (/^printfarmbutton-[a-zA-Z0-9]+$/.test(text)) {
+        return text;
+      }
+    }
+    // Search children
+    if (node.childNodes && node.childNodes.length) {
+      for (let i = 0; i < node.childNodes.length; i++) {
+        const found = findEsp32NameInNode(node.childNodes[i]);
+        if (found) return found;
+      }
+    }
+    // Search shadow DOM
+    if (node.shadowRoot) {
+      const found = findEsp32NameInNode(node.shadowRoot);
+      if (found) return found;
+    }
+    return null;
+  }
+  setInterval(function() {
+    const dialog = document.querySelector('improv-wifi-serial-provision-dialog');
+    let name = '';
+    if (dialog) {
+      name = findEsp32NameInNode(dialog) || '';
+    }
+    if (name && name !== lastName) {
+      console.log('Detected ESP32 name:', name);
+    }
+    if (name !== lastName) {
+      esp32NameInput.value = name;
+      lastName = name;
+    }
+    // Clear field if dialog closed
+    if (!dialog && lastName) {
+      esp32NameInput.value = '';
+      lastName = '';
+    }
+  }, 200);
+})();
+  </script>
 </body>
 </html>
