@@ -277,12 +277,13 @@
         <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
         <span style="flex-shrink:0; color:#555;">.local</span>
       </div>
-      <label>API Key
-        <input type="text" id="api-key" placeholder="ApiKey ..." />
-      </label>
       <label>Store ID
         <input type="text" id="store-id" placeholder="Store ID" />
       </label>
+      <label>API Key
+        <input type="text" id="api-key" placeholder="ApiKey ..." />
+      </label>
+
       <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
       <label for="printer-select" style="margin-top:1em;">Printers</label>
       <select id="printer-select" style="width:100%;padding:0.6em 1em;margin-top:0.2em;margin-bottom:0.8em;border-radius:6px;border:1px solid #d0d7de;background:#f9f9fb;font-size:1em;color:#222;max-width:100%;box-sizing:border-box;"></select>
@@ -292,6 +293,10 @@
         <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
           <strong>Privacy Notice:</strong> All data lives in this browser window and is processed client side. No data is uploaded or stored. We respect your privacy.
         </p>
+      </details>
+      <details id="curl-details" style="margin:1.5em 0;">
+        <summary style="cursor:pointer;font-weight:bold;">curl</summary>
+        <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:1em;"></pre>
       </details>
       <div id="printer-list" class="printer-list"></div>
     </div>
@@ -320,6 +325,11 @@
   const manualBtn = document.getElementById('manual-mode-btn');
   const autoFields = document.getElementById('auto-fields');
   const manualFields = document.getElementById('manual-fields');
+  const fetchBtn = document.getElementById('fetch-printers');
+  const printerSelect = document.getElementById('printer-select');
+  const configureBtn = document.getElementById('configure-btn');
+  const esp32NameInput = document.getElementById('esp32-name');
+
   autoBtn.onclick = () => {
     autoBtn.classList.add('active');
     manualBtn.classList.remove('active');
@@ -374,16 +384,13 @@
     }, 200);
   })();
 
-  // Fetch Printers button logic
-const fetchBtn = document.getElementById('fetch-printers');
-const printerSelect = document.getElementById('printer-select');
-const configureBtn = document.getElementById('configure-btn');
-const esp32NameInput = document.getElementById('esp32-name');
-
-function updateConfigureBtnState() {
-  const esp32Name = esp32NameInput.value.trim();
+  function updateConfigureBtnState() {
+  const esp32Name = esp32NameInput?.value.trim();
+  const apiKey = document.getElementById('api-key')?.value.trim();
+  const storeId = document.getElementById('store-id')?.value.trim();
   const printerSelected = printerSelect && printerSelect.value;
-  if (esp32Name && printerSelected) {
+  // Only enable if all 3 fields and a printer are set
+  if (esp32Name && apiKey && storeId && printerSelected) {
     configureBtn.disabled = false;
     configureBtn.style.background = '';
     configureBtn.style.color = '';
@@ -399,24 +406,31 @@ function updateConfigureBtnState() {
 if (esp32NameInput) {
   esp32NameInput.addEventListener('input', updateConfigureBtnState);
 }
+['api-key', 'store-id'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', updateConfigureBtnState);
+});
 if (printerSelect) {
   printerSelect.addEventListener('change', updateConfigureBtnState);
 }
 
+// Fetch Printers button logic
 if (fetchBtn) {
   fetchBtn.onclick = async function (e) {
     e.preventDefault();
+    const printerList = document.getElementById('printer-list');
     const apiKeyInput = document.getElementById('api-key');
     const storeIdInput = document.getElementById('store-id');
-    const printerList = document.getElementById('printer-list');
     const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
     const storeId = storeIdInput ? storeIdInput.value.trim() : '';
     printerList.innerHTML = '';
     printerSelect.innerHTML = '';
     if (!apiKey || !storeId) {
       printerList.innerHTML = '<div class="error">API Key and Store ID are required.</div>';
+      updateConfigureBtnState();
       return;
     }
+    printerList.innerHTML = '<div>Fetching printers...</div>';
     try {
       const resp = await fetch(`https://api.printago.io/v1/printers`, {
         headers: {
@@ -430,25 +444,110 @@ if (fetchBtn) {
       const data = await resp.json();
       if (!Array.isArray(data)) {
         printerList.innerHTML = '<div class="error">Unexpected API response.</div>';
+        updateConfigureBtnState();
         return;
       }
       if (data.length === 0) {
         printerList.innerHTML = '<div>No printers found.</div>';
+        updateConfigureBtnState();
         return;
       }
       // Populate dropdown
       printerSelect.innerHTML = '<option value="">Select a printer...</option>' +
         data.map(p => `<option value="${p.id}">${p.name || 'Printer'} (${p.id || ''})</option>`).join('');
-      printerList.innerHTML = '';
+      printerList.innerHTML = '<div class="status">Printers fetched successfully.</div>';
       updateConfigureBtnState();
     } catch (err) {
       printerList.innerHTML = `<div class="error">${err.message}</div>`;
+      updateConfigureBtnState();
+    }
+  };
+}
+
+// Configure button logic
+if (configureBtn) {
+  configureBtn.onclick = async function (e) {
+    e.preventDefault();
+    const statusDiv = document.getElementById('printer-list');
+    const esp32Name = document.getElementById('esp32-name')?.value.trim();
+    const apiKey = document.getElementById('api-key')?.value.trim();
+    const storeId = document.getElementById('store-id')?.value.trim();
+    if (!esp32Name || !apiKey || !storeId) return;
+    const esp32Host = `${esp32Name}.local`;
+    statusDiv.innerHTML = '<div>Configuring device...</div>';
+    let successCount = 0;
+    let failCount = 0;
+    let results = [];
+    const cmds = [
+      { url: `http://${esp32Host}/text/username/set?value=${encodeURIComponent(storeId)}` },
+      { url: `http://${esp32Host}/text/api_key/set?value=${encodeURIComponent(apiKey)}` },
+      { url: `http://${esp32Host}/text/printer_id/set?value=${encodeURIComponent(printerSelect?.value || '')}` }
+    ];
+    for (const cmd of cmds) {
+      try {
+        const resp = await fetch(cmd.url, { method: 'POST' });
+        if (resp.ok) {
+          successCount++;
+          results.push(`<div style='color:#007a00;'>✔ ${cmd.url}</div>`);
+        } else {
+          failCount++;
+          results.push(`<div style='color:#c00;'>✖ ${cmd.url} (HTTP ${resp.status})</div>`);
+        }
+      } catch (err) {
+        failCount++;
+        results.push(`<div style='color:#c00;'>✖ ${cmd.url} (${err.message})</div>`);
+      }
+    }
+    if (failCount === 0) {
+      statusDiv.innerHTML = `<div class='status'>All configuration commands succeeded!</div>` + results.join('');
+    } else {
+      statusDiv.innerHTML = `<div class='error'>${failCount} command(s) failed.</div>` + results.join('');
     }
   };
 }
 
 // Initial state
 updateConfigureBtnState();
+
+// Curl command generation and display logic
+// --- curl code block update logic ---
+function getCurlCommands() {
+  const esp32Name = document.getElementById('esp32-name')?.value.trim() || '';
+  const apiKey = document.getElementById('api-key')?.value.trim() || '';
+  const storeId = document.getElementById('store-id')?.value.trim() || '';
+  const esp32Host = esp32Name ? `${esp32Name}.local` : '<esp32>.local';
+  return [
+    `curl "http://${esp32Host}/text/username/set?value=${storeId}" -X POST`,
+    `curl -X POST "http://${esp32Host}/text/api_key/set?value=${apiKey}"`,
+    `curl -X POST "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}"`
+  ].join('\n');
+}
+
+function updateCurlBlock() {
+  const curlBlock = document.getElementById('curl-commands');
+  if (curlBlock) {
+    curlBlock.textContent = getCurlCommands();
+  }
+}
+
+const curlDetails = document.getElementById('curl-details');
+if (curlDetails) {
+  curlDetails.addEventListener('toggle', function() {
+    if (curlDetails.open) updateCurlBlock();
+  });
+}
+
+['esp32-name', 'api-key', 'store-id', 'printer-select'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('input', () => {
+    if (curlDetails && curlDetails.open) updateCurlBlock();
+  });
+  if (el && el.tagName === 'SELECT') {
+    el.addEventListener('change', () => {
+      if (curlDetails && curlDetails.open) updateCurlBlock();
+    });
+  }
+});
   </script>
 </body>
 </html>
