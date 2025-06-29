@@ -1,9 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
+  
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Improv Serial Provisioning</title>
+  <!-- <script src="https://cdn.jsdelivr.net/npm/improv-wifi-sdk@1.4.0/dist/launch-button.min.js"></script> -->
+   <!-- <script src="https://unpkg.com/esp-web-tools@8.0.6/dist/web/install-button.js?module"></script> -->
+  <!-- <script type="module">
+  import improvWifiSdk from 'https://cdn.jsdelivr.net/npm/improv-wifi-sdk@1.4.0/+esm';
+  </script> -->
+  <title>Print Farm Button</title>
   <style>
     body {
       font-family: sans-serif;
@@ -95,13 +101,65 @@
     .printer-label { font-weight: bold; color: #1976d2; }
     .printer-id { color: #555; font-size: 0.95em; word-break: break-all; }
     hr { border: 0; height: 1px; background: #ddd; margin: 2em 0; }
+    .provision-mode-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 1em;
+      margin-bottom: 1.5em;
+    }
+    .mode-btn {
+      background: #fff;
+      color: #1976d2;
+      font-weight: bold;
+      padding: 0.5em 2em;
+      border-radius: 30px;
+      border: none;
+      box-shadow: 0 2px 8px #0002;
+      transition: background 0.2s, color 0.2s;
+      cursor: pointer;
+      outline: none;
+    }
+    .mode-btn.active, .mode-btn:focus {
+      background: #1976d2;
+      color: #fff;
+    }
+    .provision-form label {
+      margin-top: 1em;
+    }
+    #manual-fields input {
+      background: #f3f3f3;
+    }
+    /* Center the provision device button and apply new styling */
+    #provision-device-btn {
+      display: block;
+      margin: 20px auto;
+      padding: 10px 20px;
+      background-color: #007BFF;
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background-color 0.3s ease;
+    }
+
+    #provision-device-btn:hover {
+      background-color: #0056b3;
+    }
+
+    /* Ensure the Improv WiFi SDK button is visible */
+    #auto-fields {
+      text-align: center;
+      margin-top: 20px;
+    }
   </style>
 </head>
 <body>
   <section class="hero">
     <div class="container">
       <img src="./images/logo.png" alt="PrintFarmButton Logo" class="hero-logo" style="width:100px;display:block;margin:0 auto 1em;">
-      <h1>Improv Serial Provisioning</h1>
+      <h1>Print Farm Button</h1>
       <p class="hero-desc">Easily provision and manage your PrintFarmButton devices. Connect, configure, and control your 3D printer farm with ease.</p>
       <a href="#provision" class="hero-cta">Get Started</a>
     </div>
@@ -110,14 +168,38 @@
   <section id="provision" class="section">
     <div class="container">
       <h2>WiFi Provisioning</h2>
-      <form id="provision-form">
-        <label>WiFi SSID
-          <input type="text" id="ssid" required />
-        </label>
-        <label>WiFi Password
-          <input type="password" id="password" required />
-        </label>
-        <button type="submit">Provision Device</button>
+      <div class="provision-mode-toggle">
+        <button id="auto-mode-btn" class="mode-btn active" type="button">Automatic</button>
+        <button id="manual-mode-btn" class="mode-btn" type="button">Manual</button>
+      </div>
+      <form id="provision-form" class="provision-form">
+
+        <div id="auto-fields">
+          <div class="install-container">
+            <!-- <script type="module" src="https://cdn.jsdelivr.net/npm/improv-wifi-sdk@1.4.0/dist/launch-button.min.js"></script> -->
+              <!-- <script src="./serial-launch-button.js" type="module"></script>             -->
+                <script type="module" src="https://cdn.jsdelivr.net/npm/improv-wifi-serial-sdk@2.5.0/+esm"></script>
+
+            <div class="button-row">
+              <improv-wifi-serial-launch-button></improv-wifi-serial-launch-button>
+            </div>
+            <details style="margin:1.5em 0;">
+              <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
+              <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
+                <strong>Privacy Notice:</strong> No data is stored or sent to any server. All WiFi credentials and device information remain on your computer and are only used within this webpage for device configuration. Your privacy and security are fully preserved.
+              </p>
+            </details>
+          </div>
+        </div>
+        <div id="manual-fields" style="display:none;">
+          <div class="instructions">
+            <h3>Manual Wifi Configuration</h3>
+            <li>Search for WiFi named <code>printfarm-xxxxxx</code></li>
+            <li>Join WiFi</li>
+            <li>Navigate to <code>http://192.168.4.1</code></li>
+            <li>Select WiFi network</li>
+          </ol>
+        </div>
       </form>
       <div class="status" id="status"></div>
     </div>
@@ -154,108 +236,25 @@
     </div>
   </section>
 
+
   <script>
-    // Improv Serial protocol constants
-    const CMD_PROVISION = 0x01;
-    const STATE_PROVISIONING = 0x02;
-    const STATE_PROVISIONED = 0x03;
-    const STATE_FAILED = 0x04;
+  const autoBtn = document.getElementById('auto-mode-btn');
+  const manualBtn = document.getElementById('manual-mode-btn');
+  const autoFields = document.getElementById('auto-fields');
+  const manualFields = document.getElementById('manual-fields');
+  autoBtn.onclick = () => {
+    autoBtn.classList.add('active');
+    manualBtn.classList.remove('active');
+    autoFields.style.display = '';
+    manualFields.style.display = 'none';
+  };
+  manualBtn.onclick = () => {
+    manualBtn.classList.add('active');
+    autoBtn.classList.remove('active');
+    manualFields.style.display = '';
+    autoFields.style.display = 'none';
+  };
+</script>
 
-    function encodeImprovProvision(ssid, password) {
-      // Improv Serial: [0x70, 0x63, 0x00, len, CMD, ssid, 0x00, password]
-      const encoder = new TextEncoder();
-      const ssidBytes = encoder.encode(ssid);
-      const passBytes = encoder.encode(password);
-      const len = 1 + ssidBytes.length + 1 + passBytes.length;
-      const arr = new Uint8Array(4 + len);
-      arr[0] = 0x70; // 'p'
-      arr[1] = 0x63; // 'c'
-      arr[2] = 0x00; // reserved
-      arr[3] = len;
-      arr[4] = CMD_PROVISION;
-      arr.set(ssidBytes, 5);
-      arr[5 + ssidBytes.length] = 0x00;
-      arr.set(passBytes, 6 + ssidBytes.length);
-      return arr;
-    }
-
-    async function connectSerial() {
-      if (!('serial' in navigator)) throw new Error('Web Serial API not supported');
-      const port = await navigator.serial.requestPort();
-      await port.open({ baudRate: 115200 });
-      return port;
-    }
-
-    document.getElementById('provision-form').onsubmit = async (e) => {
-      e.preventDefault();
-      const ssid = document.getElementById('ssid').value;
-      const password = document.getElementById('password').value;
-      const status = document.getElementById('status');
-      status.textContent = 'Connecting to device...';
-      status.className = 'status';
-      try {
-        const port = await connectSerial();
-        status.textContent = 'Connected. Sending credentials...';
-        const writer = port.writable.getWriter();
-        const data = encodeImprovProvision(ssid, password);
-        await writer.write(data);
-        writer.releaseLock();
-        status.textContent = 'Provisioning...';
-        // Optionally, listen for response (not implemented here)
-        setTimeout(() => {
-          status.textContent = 'Provisioning command sent! If your credentials are correct, the device will connect to WiFi.';
-        }, 2000);
-        await port.close();
-      } catch (err) {
-        status.textContent = 'Error: ' + err.message;
-        status.className = 'status error';
-      }
-    };
-
-    document.getElementById('fetch-printers').onclick = async (e) => {
-      e.preventDefault();
-      const apiKey = document.getElementById('api-key').value.trim();
-      const storeId = document.getElementById('store-id').value.trim();
-      const printerList = document.getElementById('printer-list');
-      printerList.innerHTML = 'Fetching...';
-      if (!apiKey || !storeId) {
-        printerList.innerHTML = '<span class="error">Please enter both API Key and Store ID.</span>';
-        return;
-      }
-      try {
-        const resp = await fetch('https://api.printago.io/v1/printers', {
-          headers: {
-            'authorization': 'ApiKey ' + apiKey,
-            'x-printago-storeid': storeId
-          }
-        });
-        if (!resp.ok) {
-          printerList.innerHTML = '<span class="error">Error: ' + resp.status + ' ' + resp.statusText + '</span>';
-          return;
-        }
-        const data = await resp.json();
-        let output = [];
-        if (Array.isArray(data)) {
-          output = data.map(p => ({ id: p.id, name: p.name }));
-        } else if (data && data.printers && Array.isArray(data.printers)) {
-          output = data.printers.map(p => ({ id: p.id, name: p.name }));
-        }
-        if (output.length === 0) {
-          printerList.innerHTML = '<span class="error">No printers found.</span>';
-          return;
-        }
-        printerList.innerHTML = output.map(p => `
-          <div class="printer-item">
-            <div class="printer-label">Name:</div>
-            <div>${p.name || '<em>Unnamed</em>'}</div>
-            <div class="printer-label" style="margin-top:0.5em;">Printer ID:</div>
-            <div class="printer-id">${p.id}</div>
-          </div>
-        `).join('');
-      } catch (err) {
-        printerList.innerHTML = '<span class="error">Error: ' + err.message + '</span>';
-      }
-    };
-  </script>
 </body>
 </html>
