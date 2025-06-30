@@ -279,6 +279,7 @@
       </label>
       <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
       <div id="printer-list" class="printer-list"></div>
+      <br />
       <label for="printer-select" style="margin-top:1em;">Printers</label>
       <select id="printer-select" style="width:100%;padding:0.6em 1em;margin-top:0.2em;margin-bottom:0.8em;border-radius:6px;border:1px solid #d0d7de;background:#f9f9fb;font-size:1em;color:#222;max-width:100%;box-sizing:border-box;"></select>
       <label>ESP32 Name</label>
@@ -287,6 +288,9 @@
         <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
         <span style="flex-shrink:0; color:#555;">.local</span>
       </div>
+      <label>MQTT Endpoint
+        <input type="text" id="mqtt-endpoint" placeholder="MQTT Endpoint" value="realtime.printago.io" />
+      </label>
       <button id="configure-btn" class="mode-btn" style="margin-top:1em;background:#ccc;color:#888;cursor:not-allowed;" disabled>Configure</button>
       <details id="curl-details" style="margin:1.5em 0;">
         <summary style="cursor:pointer;font-weight:bold;">curl</summary>
@@ -471,6 +475,7 @@ if (configureBtn) {
     const esp32Name = document.getElementById('esp32-name')?.value.trim();
     const apiKey = document.getElementById('api-key')?.value.trim();
     const storeId = document.getElementById('store-id')?.value.trim();
+    const mqttEndpoint = document.getElementById('mqtt-endpoint')?.value.trim();
     if (!esp32Name || !apiKey || !storeId) return;
     const esp32Host = `${esp32Name}.local`;
     statusDiv.innerHTML = '<div>Configuring device...</div>';
@@ -480,7 +485,8 @@ if (configureBtn) {
     const cmds = [
       { url: `http://${esp32Host}/text/username/set?value=${encodeURIComponent(storeId)}` },
       { url: `http://${esp32Host}/text/api_key/set?value=${encodeURIComponent(apiKey)}` },
-      { url: `http://${esp32Host}/text/printer_id/set?value=${encodeURIComponent(printerSelect?.value || '')}` }
+      { url: `http://${esp32Host}/text/printer_id/set?value=${encodeURIComponent(printerSelect?.value || '')}` },
+      { url: `http://${esp32Host}/text/mqtt_endpoint/set?value=${encodeURIComponent(mqttEndpoint || '')}` }
     ];
     for (const cmd of cmds) {
       try {
@@ -514,11 +520,13 @@ function getCurlCommands() {
   const esp32Name = document.getElementById('esp32-name')?.value.trim() || '';
   const apiKey = document.getElementById('api-key')?.value.trim() || '';
   const storeId = document.getElementById('store-id')?.value.trim() || '';
+  const mqttEndpoint = document.getElementById('mqtt-endpoint')?.value.trim() || '';
   const esp32Host = esp32Name ? `${esp32Name}.local` : '<esp32>.local';
   return [
     `curl "http://${esp32Host}/text/username/set?value=${storeId}" -X POST`,
     `curl "http://${esp32Host}/text/api_key/set?value=${apiKey}" -X POST`,
-    `curl "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}" -X POST`
+    `curl "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}" -X POST`,
+    `curl "http://${esp32Host}/text/mqtt_endpoint/set?value=${mqttEndpoint}" -X POST`
   ].join('\n');
 }
 
