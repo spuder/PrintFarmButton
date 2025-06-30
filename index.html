@@ -271,37 +271,52 @@
   <section class="section alt">
     <div class="container">
       <h2>Printago Configuration</h2>
-      <label>Store ID
-        <input type="text" id="store-id" placeholder="Store ID" />
-      </label>
-      <label>API Key
-        <input type="text" id="api-key" placeholder="ApiKey ..." />
-      </label>
-      <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
-      <div id="printer-list" class="printer-list"></div>
-      <br />
-      <label for="printer-select" style="margin-top:1em;">Printers</label>
-      <select id="printer-select" style="width:100%;padding:0.6em 1em;margin-top:0.2em;margin-bottom:0.8em;border-radius:6px;border:1px solid #d0d7de;background:#f9f9fb;font-size:1em;color:#222;max-width:100%;box-sizing:border-box;"></select>
-      <label>ESP32 Name</label>
-      <div class="esp32-row">
-        <span style="flex-shrink:0; color:#555;">http://</span>
-        <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
-        <span style="flex-shrink:0; color:#555;">.local</span>
+      <div class="provision-mode-toggle" id="printago-mode-toggle">
+        <button id="printago-auto-mode-btn" class="mode-btn active" type="button">Automatic</button>
+        <button id="printago-manual-mode-btn" class="mode-btn" type="button">Manual</button>
       </div>
-      <label>MQTT Endpoint
-        <input type="text" id="mqtt-endpoint" placeholder="MQTT Endpoint" value="realtime.printago.io" />
-      </label>
-      <button id="configure-btn" class="mode-btn" style="margin-top:1em;background:#ccc;color:#888;cursor:not-allowed;" disabled>Configure</button>
-      <details id="curl-details" style="margin:1.5em 0;">
-        <summary style="cursor:pointer;font-weight:bold;">curl</summary>
-        <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:1em;"></pre>
-      </details>
-      <details style="margin:1.5em 0;">
-        <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
-        <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
-          <strong>Privacy Notice:</strong> All data lives in this browser window and is processed client side. No data is uploaded or stored. We respect your privacy.
-        </p>
-      </details>
+      <form id="printago-auto-fields">
+        <label>Store ID
+          <input type="text" id="store-id" placeholder="Store ID" />
+        </label>
+        <label>API Key
+          <input type="text" id="api-key" placeholder="ApiKey ..." />
+        </label>
+        <button id="fetch-printers" class="mode-btn" style="margin-top:1.5em;">Fetch Printers</button>
+        <div id="printer-list" class="printer-list"></div>
+        <br />
+        <label for="printer-select" style="margin-top:1em;">Printers</label>
+        <select id="printer-select" style="width:100%;padding:0.6em 1em;margin-top:0.2em;margin-bottom:0.8em;border-radius:6px;border:1px solid #d0d7de;background:#f9f9fb;font-size:1em;color:#222;max-width:100%;box-sizing:border-box;"></select>
+        <label>ESP32 Name</label>
+        <div class="esp32-row">
+          <span style="flex-shrink:0; color:#555;">http://</span>
+          <input type="text" id="esp32-name" placeholder="ESP32 Name" style="flex:1; min-width:0; max-width:100%;" />
+          <span style="flex-shrink:0; color:#555;">.local</span>
+        </div>
+        <label>MQTT Endpoint
+          <input type="text" id="mqtt-endpoint" placeholder="MQTT Endpoint" value="realtime.printago.io" />
+        </label>
+        <button id="configure-btn" class="mode-btn" style="margin-top:1em;background:#ccc;color:#888;cursor:not-allowed;" disabled>Configure</button>
+        <details id="curl-details" style="margin:1.5em 0;">
+          <summary style="cursor:pointer;font-weight:bold;">curl</summary>
+          <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:1em;"></pre>
+        </details>
+        <details style="margin:1.5em 0;">
+          <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
+          <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
+            <strong>Privacy Notice:</strong> All data lives in this browser window and is processed client side. No data is uploaded or stored. We respect your privacy.
+          </p>
+        </details>
+      </form>
+      <div id="printago-manual-fields" style="display:none;text-align:center;">
+        <div style="margin-bottom:1.5em;text-align:left;max-width:350px;margin-left:auto;margin-right:auto;">
+          <ol style="padding-left:1.2em;">
+            <li>Navigate to <code>http://printfarmbutton-xxxxxx.local</code> (where <code>xxxxxx</code> is the last 6 of the MAC address)</li>
+            <li>Enter config options in webpage</li>
+          </ol>
+        </div>
+        <img src="images/printago-mqtt.png" alt="Printago MQTT Manual" style="max-width:100%;border-radius:8px;box-shadow:0 2px 8px #0002;margin-top:2em;" />
+      </div>
     </div>
   </section>
 
@@ -513,6 +528,26 @@ if (configureBtn) {
 
 // Initial state
 updateConfigureBtnState();
+
+// Printago Automatic/Manual toggle logic
+const printagoAutoBtn = document.getElementById('printago-auto-mode-btn');
+const printagoManualBtn = document.getElementById('printago-manual-mode-btn');
+const printagoAutoFields = document.getElementById('printago-auto-fields');
+const printagoManualFields = document.getElementById('printago-manual-fields');
+if (printagoAutoBtn && printagoManualBtn && printagoAutoFields && printagoManualFields) {
+  printagoAutoBtn.onclick = () => {
+    printagoAutoBtn.classList.add('active');
+    printagoManualBtn.classList.remove('active');
+    printagoAutoFields.style.display = '';
+    printagoManualFields.style.display = 'none';
+  };
+  printagoManualBtn.onclick = () => {
+    printagoManualBtn.classList.add('active');
+    printagoAutoBtn.classList.remove('active');
+    printagoManualFields.style.display = '';
+    printagoAutoFields.style.display = 'none';
+  };
+}
 
 // Curl command generation and display logic
 // --- curl code block update logic ---
