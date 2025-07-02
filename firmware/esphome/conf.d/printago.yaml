@@ -241,6 +241,8 @@ script:
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
         - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
+        - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+        - lambda: 'return id(printer_is_available_sensor).state;'
       then:
       - http_request.send:
           method: PATCH
@@ -267,7 +269,7 @@ script:
                 }
       else:
       - lambda: |-
-          ESP_LOGW("printago", "Not running mark_printer_ready: printer_id, api_key_text, or username_text is missing");
+          ESP_LOGW("printago", "Not running mark_printer_ready: printer is not in the correct state (must be available and not already confirmed ready), or required fields are missing");
 
 text_sensor:
 - platform: template
@@ -281,7 +283,7 @@ text_sensor:
 
 text:
 - platform: template
-  name: "Api Key"
+  name: "Api Key" #This name is the key for the rest api, do not change
   id: api_key_text
   mode: password
   restore_value: true
@@ -293,7 +295,7 @@ text:
   icon: "mdi:key"
 
 - platform: template
-  name: "Username"
+  name: "Username" #This name is the key for the rest api, do not change
   id: username_text
   mode: text
   restore_value: true
@@ -336,7 +338,7 @@ text:
   internal: true
 
 - platform: template
-  name: "Printer ID"
+  name: "Printer ID" #This name is the key for the rest api, do not change
   id: printer_id
   mode: text
   restore_value: true

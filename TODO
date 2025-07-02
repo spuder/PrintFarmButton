@@ -21,3 +21,4 @@
 [ ] Check for firmwrae updates on boot
 [ ] Make auto update permenant so it survives updates
 [x] Why does it always say there is an update available? 
+[ ] Press and hold button to mark print as failed
