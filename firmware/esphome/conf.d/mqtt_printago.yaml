@@ -37,14 +37,14 @@ mqtt:
 binary_sensor:
 - platform: template
   name: "MQTT Connection"
-  id: mqtt_connected
+  id: mqtt_connected_printago
   device_class: connectivity
   web_server:
     sorting_group_id: printago
     sorting_weight: 7
   icon: "mdi:cloud-check-variant-outline"
   lambda: |-
-    return id(mqtt_client_id)->is_connected();
+    return id(mqtt_client_id).is_connected();
 
 text:
 - platform: template
@@ -64,3 +64,8 @@ text:
     - lambda: |-
         ESP_LOGI("mqtt", "MQTT Endpoint changed to: %s", x.c_str());
         id(mqtt_client_id).set_broker_address(x.c_str());
+
+        // Trigger connection validation for current provider
+        if (id(cloud_connection).state == "Printago") {
+          //id(validate_and_connect_mqtt).execute();
+        }

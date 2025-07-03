@@ -1,0 +1,102 @@
+# Firmware type selection for PrintFarmButton
+globals:
+- id: last_cloud_state
+  type: std::string
+  restore_value: yes
+
+select:
+- platform: template
+  name: "Cloud Connection"
+  id: cloud_connection
+  optimistic: true
+  options:
+  - "Bambu"
+  - "Printago"
+  initial_option: "Bambu"
+  restore_value: true
+  icon: "mdi:chip"
+  web_server:
+    sorting_group_id: cloud
+  state_topic:
+  on_value:
+  - script.execute: connect_mqtt
+
+script:
+- id: connect_mqtt
+  mode: queued
+  then:
+  - if:
+      condition:
+        lambda: 'return id(cloud_connection).state == "Bambu";'
+      then:
+      - if:
+          condition:
+            lambda: |
+              return !id(bambu_ip_address).state.empty() &&
+                     !id(bambu_lan_access_code).state.empty() &&
+                     !id(bambu_serial_number).state.empty();
+          then:
+          # Credentials are set, check if we need to reconnect
+          - if:
+              condition:
+                lambda: |
+                  return id(last_cloud_state) != "Bambu" || !id(mqtt_client_id).is_connected();
+              then:
+              - logger.log: "Switching to Bambu or not connected, reconnecting..."
+              - mqtt.disable:
+                  id: mqtt_client_id
+              - lambda: |
+                  id(mqtt_client_id).set_broker_address(id(bambu_ip_address).state.c_str());
+                  id(mqtt_client_id).set_username("bblp");
+                  id(mqtt_client_id).set_password(id(bambu_lan_access_code).state.c_str());
+                  id(mqtt_client_id).set_client_id("bambu-client");
+                  id(last_cloud_state) = "Bambu";
+              - mqtt.enable:
+                  id: mqtt_client_id
+              else:
+              - logger.log: "Bambu MQTT already connected and configured."
+          else:
+          # Bambu selected but no credentials, ensure it's disconnected
+          - logger.log: "Missing Bambu credentials, ensuring MQTT is disconnected."
+          - mqtt.disable:
+              id: mqtt_client_id
+  - if:
+      condition:
+        lambda: 'return id(cloud_connection).state == "Printago";'
+      then:
+      - if:
+          condition:
+            lambda: |
+              return !id(printer_id).state.empty() &&
+                     !id(username_text).state.empty() &&
+                     !id(mqtt_endpoint_text).state.empty();
+          then:
+          # Credentials are set, check if we need to connect
+          - if:
+              condition:
+                lambda: |
+                  return id(last_cloud_state) != "Printago" || !id(mqtt_client_id).is_connected();
+              then:
+              - logger.log: "Switching to Printago or not connected, connecting..."
+              - mqtt.disable:
+                  id: mqtt_client_id
+              - lambda: |
+                  // Generate client_id with format: apiclient_<username>_<random_suffix>
+                  std::string client_id = "apiclient_" + id(username_text).state + "_" + std::to_string(random_uint32());
+                  ESP_LOGI("mqtt", "Setting client_id to: %s", client_id.c_str());
+
+                  id(mqtt_client_id).set_broker_address(id(mqtt_endpoint_text).state.c_str());
+                  id(mqtt_client_id).set_username(id(username_text).state.c_str());
+                  id(mqtt_client_id).set_password(id(api_key_text).state.c_str());
+                  id(mqtt_client_id).set_client_id(client_id.c_str());
+                  id(last_cloud_state) = "Printago";
+              - script.execute: clear_printago_status
+              - mqtt.enable:
+                  id: mqtt_client_id
+              else:
+              - logger.log: "Printago MQTT already connected."
+          else:
+          # Printago selected but no credentials, ensure it's disconnected
+          - logger.log: "Missing Printago credentials, ensuring MQTT is disconnected."
+          - mqtt.disable:
+              id: mqtt_client_id

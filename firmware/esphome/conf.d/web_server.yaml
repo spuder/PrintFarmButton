@@ -4,6 +4,10 @@ web_server:
   version: 3
   include_internal: false
   sorting_groups:
+  - id: cloud
+    name: Cloud
+  - id: bambu
+    name: Bambu
   - id: printago
     name: Printago
   - id: updates

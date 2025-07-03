@@ -1,0 +1,55 @@
+text:
+- platform: template
+  name: Printer Serial Number
+  id: bambu_serial_number
+  state_topic:
+  optimistic: true
+  mode: text
+  restore_value: true
+  icon: mdi:barcode
+  web_server:
+    sorting_group_id: bambu
+  on_value:
+    then:
+    - script.execute: connect_mqtt
+  #       - script.execute: check_mqtt_creds #TODO: Enable once this is merged: https://github.com/esphome/esphome/pull/7716
+  #     lambda: |-
+  #       id(bambu_printer_status).topic = "device/" + x + "/report";
+- platform: template
+  name: Printer Lan Access Code
+  id: bambu_lan_access_code
+  state_topic:
+  optimistic: true
+  mode: password
+  restore_value: true
+  icon: mdi:lock
+  web_server:
+    sorting_group_id: bambu
+  on_value:
+    then:
+    - script.execute: connect_mqtt
+- platform: template
+  name: Printer IP Address
+  id: bambu_ip_address
+  state_topic:
+  optimistic: true
+  mode: text
+  restore_value: true
+  icon: mdi:ip
+  web_server:
+    sorting_group_id: bambu
+  on_value:
+    then:
+    - script.execute: connect_mqtt
+
+binary_sensor:
+- platform: template
+  name: "MQTT Connection"
+  id: mqtt_connected_bambu
+  device_class: connectivity
+  web_server:
+    sorting_group_id: bambu
+    sorting_weight: 7
+  icon: "mdi:cloud-check-variant-outline"
+  lambda: |-
+    return id(mqtt_client_id).is_connected();

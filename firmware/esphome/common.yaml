@@ -15,10 +15,13 @@ esphome:
 packages:
   led: !include conf.d/led.yaml
   web_server: !include conf.d/web_server.yaml
-  mqtt: !include conf.d/mqtt.yaml
+  cloud: !include conf.d/cloud.yaml
+  cloud_printago: !include conf.d/cloud_printago.yaml
+  cloud_bambu: !include conf.d/cloud_bambu.yaml
+  mqtt_bambu: !include conf.d/mqtt_bambu.yaml
+  mqtt_printago: !include conf.d/mqtt_printago.yaml
   button: !include conf.d/button.yaml
   wifi: !include conf.d/wifi.yaml
-  printago: !include conf.d/printago.yaml
   update: !include conf.d/update.yaml
   version: !include conf.d/version.yaml
 logger:

@@ -293,6 +293,9 @@ text:
     sorting_group_id: printago
     sorting_weight: 5
   icon: "mdi:key"
+  on_value:
+    then:
+    - script.execute: connect_mqtt
 
 - platform: template
   name: "Username" #This name is the key for the rest api, do not change
@@ -307,27 +310,7 @@ text:
   icon: "mdi:account-circle"
   on_value:
     then:
-    - lambda: |-
-        ESP_LOGI("mqtt", "Username changed to: %s", x.c_str());
-
-        // Generate client_id with format: apiclient_<username>_<random_suffix>
-        std::string client_id = "apiclient_" + x + "_" + std::to_string(random_uint32());
-        ESP_LOGI("mqtt", "Setting client_id to: %s", client_id.c_str());
-
-        // Set both username and client_id
-        id(mqtt_client_id).set_username(x);
-        id(mqtt_client_id).set_client_id(client_id.c_str());
-
-        // Check if we should connect/reconnect to MQTT
-        if (!x.empty() && !id(printer_id).state.empty()) {
-          ESP_LOGI("mqtt", "Both username and printer ID are set, connecting to MQTT");
-          id(clear_printago_status).execute();
-          id(check_printago_status).execute();
-          id(mqtt_client_id).enable();
-        } else {
-          ESP_LOGI("mqtt", "Username or printer ID missing, disconnecting MQTT");
-          id(mqtt_client_id).disable();
-        }
+    - script.execute: connect_mqtt
 
 - platform: template
   id: printer_id_previous
@@ -349,24 +332,20 @@ text:
     sorting_weight: 1
   on_value:
     then:
+    - script.execute: connect_mqtt
     - lambda: |-
-        std::string previous_printer_id = id(printer_id_previous).state;
-        std::string new_printer_id = x;
-
-        ESP_LOGI("mqtt", "Printer ID changing from '%s' to '%s'", previous_printer_id.c_str(), new_printer_id.c_str());
-
-        // Check if we should connect/reconnect to MQTT
-        if (new_printer_id.empty() || id(username_text).state.empty() || id(mqtt_endpoint_text).state.empty()) {
-          ESP_LOGI("mqtt", "Username, printer ID, or mqtt_endpoint missing, disabling MQTT");
-          id(clear_printago_status).execute();
-          id(mqtt_client_id).disable();
+        if (id(cloud_connection).state != "Printago") {
           return;
         }
 
-        ESP_LOGI("mqtt", "All required fields set, enabling MQTT");
-        id(clear_printago_status).execute();
-        id(check_printago_status).execute();
-        id(mqtt_client_id).enable();
+        std::string previous_printer_id = id(printer_id_previous).state;
+        std::string new_printer_id = x;
+
+        if (new_printer_id == previous_printer_id) {
+          return; // No change
+        }
+
+        ESP_LOGI("mqtt", "Printer ID changing from '%s' to '%s'", previous_printer_id.c_str(), new_printer_id.c_str());
 
         // Unsubscribe from previous topics
         if (!previous_printer_id.empty() && !id(username_text).state.empty()) {
@@ -379,6 +358,10 @@ text:
 
         // Store the new value
         id(printer_id_previous).publish_state(new_printer_id);
+
+        if (new_printer_id.empty() || id(username_text).state.empty()) {
+          return; // Not enough info to subscribe
+        }
 
         // Subscribe to printer stats topic
         std::string stats_topic = "stores/" + id(username_text).state + "/printer-stats/" + new_printer_id;
