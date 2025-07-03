@@ -1,0 +1,79 @@
+mqtt:
+  id: mqtt_client_id
+  broker: ""
+  client_id: printfarmbutton
+  # port: 8883 #Bambu printers use port 8883. Port is set by connect_mqtt script.
+  username: ""
+  password: ""
+  discover_ip: false
+  discovery: false
+  discovery_retain: false
+  discovery_prefix:
+  use_abbreviations: false
+  topic_prefix:
+  log_topic:
+  skip_cert_cn_check: true
+  # TODO: do I actaually need certifiate authority? 
+  #TODO: set dynamically with set_ca_certificate()
+  certificate_authority: |
+    -----BEGIN CERTIFICATE-----
+    MIIDZTCCAk2gAwIBAgIUV1FckwXElyek1onFnQ9kL7Bk4N8wDQYJKoZIhvcNAQEL
+    BQAwQjELMAkGA1UEBhMCQ04xIjAgBgNVBAoMGUJCTCBUZWNobm9sb2dpZXMgQ28u
+    LCBMdGQxDzANBgNVBAMMBkJCTCBDQTAeFw0yMjA0MDQwMzQyMTFaFw0zMjA0MDEw
+    MzQyMTFaMEIxCzAJBgNVBAYTAkNOMSIwIAYDVQQKDBlCQkwgVGVjaG5vbG9naWVz
+    IENvLiwgTHRkMQ8wDQYDVQQDDAZCQkwgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+    DwAwggEKAoIBAQDL3pnDdxGOk5Z6vugiT4dpM0ju+3Xatxz09UY7mbj4tkIdby4H
+    oeEdiYSZjc5LJngJuCHwtEbBJt1BriRdSVrF6M9D2UaBDyamEo0dxwSaVxZiDVWC
+    eeCPdELpFZdEhSNTaT4O7zgvcnFsfHMa/0vMAkvE7i0qp3mjEzYLfz60axcDoJLk
+    p7n6xKXI+cJbA4IlToFjpSldPmC+ynOo7YAOsXt7AYKY6Glz0BwUVzSJxU+/+VFy
+    /QrmYGNwlrQtdREHeRi0SNK32x1+bOndfJP0sojuIrDjKsdCLye5CSZIvqnbowwW
+    1jRwZgTBR29Zp2nzCoxJYcU9TSQp/4KZuWNVAgMBAAGjUzBRMB0GA1UdDgQWBBSP
+    NEJo3GdOj8QinsV8SeWr3US+HjAfBgNVHSMEGDAWgBSPNEJo3GdOj8QinsV8SeWr
+    3US+HjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQABlBIT5ZeG
+    fgcK1LOh1CN9sTzxMCLbtTPFF1NGGA13mApu6j1h5YELbSKcUqfXzMnVeAb06Htu
+    3CoCoe+wj7LONTFO++vBm2/if6Jt/DUw1CAEcNyqeh6ES0NX8LJRVSe0qdTxPJuA
+    BdOoo96iX89rRPoxeed1cpq5hZwbeka3+CJGV76itWp35Up5rmmUqrlyQOr/Wax6
+    itosIzG0MfhgUzU51A2P/hSnD3NDMXv+wUY/AvqgIL7u7fbDKnku1GzEKIkfH8hm
+    Rs6d8SCU89xyrwzQ0PR853irHas3WrHVqab3P+qNwR0YirL0Qk7Xt/q3O1griNg2
+    Blbjg3obpHo9
+    -----END CERTIFICATE-----
+  clean_session: true
+  enable_on_boot: false # Don't auto-connect, we'll connect manually when ready
+  birth_message:
+    topic:
+    payload:
+  will_message:
+    topic:
+    payload:
+  on_disconnect:
+    then:
+    # TODO: clear mqtt settings
+    - light.turn_on:
+        id: printfarmbutton_rgb
+        red: 1.0
+        green: 1.0
+        blue: 1.0
+        effect: None
+  #TODO: subscribe_bambu_topics causes crashes
+  # on_connect:
+  #   then:
+  #   - if:
+  #       condition:
+  #         lambda: 'return id(cloud_connection).state == "Bambu";'
+  #       then:
+  #       - script.execute: subscribe_bambu_topics
+  #   - if:
+  #       condition:
+  #         lambda: 'return id(cloud_connection).state == "Printago";'
+  #       then:
+  #       - script.execute: subscribe_printago_topics
+  # on_json_message:
+  #   topic: "device/xxxx/report"
+  #   then:
+  #   - lambda: |-
+  #       ESP_LOGD("mqtt", "Received JSON message");
+  # on_message:
+  #   topic: "device/xxxxx/report"
+  #   then:
+  #   - lambda: |-
+  #       ESP_LOGD("mqtt", "Raw payload: %s", x.c_str());

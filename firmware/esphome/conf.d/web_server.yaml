@@ -6,12 +6,16 @@ web_server:
   sorting_groups:
   - id: cloud
     name: Cloud
+    sorting_weight: 1
   - id: bambu
     name: Bambu
+    sorting_weight: 2
   - id: printago
     name: Printago
+    sorting_weight: 3
   - id: updates
     name: Updates
+    sorting_weight: 4
   # - id: diagnostic
   #   name: Diagnostic
 

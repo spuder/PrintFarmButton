@@ -18,12 +18,14 @@ packages:
   cloud: !include conf.d/cloud.yaml
   cloud_printago: !include conf.d/cloud_printago.yaml
   cloud_bambu: !include conf.d/cloud_bambu.yaml
+  mqtt: !include conf.d/mqtt.yaml
   mqtt_bambu: !include conf.d/mqtt_bambu.yaml
   mqtt_printago: !include conf.d/mqtt_printago.yaml
   button: !include conf.d/button.yaml
   wifi: !include conf.d/wifi.yaml
   update: !include conf.d/update.yaml
   version: !include conf.d/version.yaml
+  scripts: !include conf.d/scripts.yaml
 logger:
   # level: VERBOSE
   # logs:

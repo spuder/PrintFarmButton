@@ -1,52 +1,31 @@
-mqtt:
-  id: mqtt_client_id
-  # broker: ""
-  broker: ""
-  client_id: ""
-  port: 1883
-  username: ""
-  password: ""
-  discover_ip: false
-  discovery: false
-  discovery_retain: false
-  discovery_prefix:
-  use_abbreviations: false
-  topic_prefix:
-  log_topic: # skip_cert_cn_check: true
-
-  clean_session: true
-  enable_on_boot: false # Don't auto-connect, we'll connect manually when ready
-  birth_message:
-    topic:
-    payload:
-  will_message:
-    topic:
-    payload:
-      # on_connect:
-      # - logger.log:
-      #     format: "MQTT Connected."
-  on_disconnect:
-    then:
-    - light.turn_on:
-        id: printfarmbutton_rgb
-        red: 1.0
-        green: 1.0
-        blue: 1.0
-        effect: None
-
 binary_sensor:
 - platform: template
   name: "MQTT Connection"
-  id: mqtt_connected_printago
+  id: mqtt_connected
   device_class: connectivity
   web_server:
-    sorting_group_id: printago
-    sorting_weight: 7
+    sorting_group_id: cloud
+    sorting_weight: 2
   icon: "mdi:cloud-check-variant-outline"
   lambda: |-
     return id(mqtt_client_id).is_connected();
 
 text:
+- platform: template
+  name: "Bambu MQTT Port"
+  id: mqtt_port_printago
+  mode: text
+  optimistic: true
+  restore_value: true
+  initial_value: "1883"
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 8
+  icon: "mdi:numeric"
+  on_value:
+    then:
+    - script.execute: connect_mqtt
+
 - platform: template
   name: "MQTT Endpoint"
   id: mqtt_endpoint_text
@@ -61,11 +40,60 @@ text:
   icon: "mdi:lan"
   on_value:
     then:
-    - lambda: |-
-        ESP_LOGI("mqtt", "MQTT Endpoint changed to: %s", x.c_str());
-        id(mqtt_client_id).set_broker_address(x.c_str());
+    - script.execute: connect_mqtt
 
-        // Trigger connection validation for current provider
-        if (id(cloud_connection).state == "Printago") {
-          //id(validate_and_connect_mqtt).execute();
-        }
+#TODO: simplify this
+# remove check for prevous values
+script:
+- id: subscribe_printago_topics
+  mode: queued
+  then:
+  - lambda: |
+      if (id(cloud_connection).state != "Printago") {
+        return;
+      }
+
+      std::string previous_printer_id = id(printer_id_previous).state;
+      std::string new_printer_id = id(printer_id).state;
+
+      if (new_printer_id == previous_printer_id && id(mqtt_client_id).is_connected()) {
+        ESP_LOGI("mqtt", "Printer ID has not changed, no action needed.");
+        return; // No change and already connected
+      }
+
+      ESP_LOGI("mqtt", "Printer ID changing from '%s' to '%s'", previous_printer_id.c_str(), new_printer_id.c_str());
+
+      // Unsubscribe from previous topics
+      if (!previous_printer_id.empty()) {
+        auto old_status_topic = "printers/" + previous_printer_id + "/status";
+        id(mqtt_client_id).unsubscribe(old_status_topic.c_str());
+        ESP_LOGI("mqtt", "Unsubscribed from old Printago status topic: %s", old_status_topic.c_str());
+
+        auto old_stats_topic = "printers/" + previous_printer_id + "/stats";
+        id(mqtt_client_id).unsubscribe(old_stats_topic.c_str());
+        ESP_LOGI("mqtt", "Unsubscribed from old Printago stats topic: %s", old_stats_topic.c_str());
+      }
+
+      // Store the new value
+      id(printer_id_previous).publish_state(new_printer_id);
+
+      if (new_printer_id.empty()) {
+        ESP_LOGI("mqtt", "New printer ID is empty, not subscribing.");
+        return; // Not enough info to subscribe
+      }
+
+      // Subscribe to printer status topic
+      auto status_topic = "printers/" + new_printer_id + "/status";
+      id(mqtt_client_id).subscribe_json(status_topic.c_str(), [](const std::string &topic, JsonObject root) {
+        ESP_LOGV("mqtt", "Received JSON on status topic");
+        // Add your JSON parsing logic for status here
+      });
+      ESP_LOGI("mqtt", "Subscribed to Printago status topic: %s", status_topic.c_str());
+
+      // Subscribe to printer stats topic
+      auto stats_topic = "printers/" + new_printer_id + "/stats";
+      id(mqtt_client_id).subscribe_json(stats_topic.c_str(), [](const std::string &topic, JsonObject root) {
+        ESP_LOGV("mqtt", "Received JSON on stats topic");
+        // Add your JSON parsing logic for stats here
+      });
+      ESP_LOGI("mqtt", "Subscribed to Printago stats topic: %s", stats_topic.c_str());

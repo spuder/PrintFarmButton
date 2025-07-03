@@ -76,6 +76,7 @@ script:
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
         - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
+        - lambda: 'return id(cloud_connection).state == "Printago";'
       then:
       - http_request.get:
           url: !lambda |-
@@ -231,6 +232,7 @@ script:
                               blue: 1.0
                               effect: none
                               brightness: 90%
+
 - id: mark_printer_ready
   mode: queued
   then:
@@ -333,6 +335,11 @@ text:
   on_value:
     then:
     - script.execute: connect_mqtt
+    - if:
+        condition:
+          lambda: 'return id(mqtt_client_id).is_connected();'
+        then:
+        - script.execute: subscribe_printago_topics
     - lambda: |-
         if (id(cloud_connection).state != "Printago") {
           return;
