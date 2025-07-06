@@ -101,6 +101,12 @@ script:
                     
                     ESP_LOGI("mqtt", "Subscribed to Bambu topic: %s", topic.c_str());
                   }
+              # - lambda: |-
+              #     // Publish initial status to Bambu
+              #     ESP_LOGD("mqtt", "Publishing initial status to Bambu MQTT");
+              #     std::string topic = "device/" + id(bambu_serial_number).state + "/request";
+              #     std::string payload = "{\"pushing\": {\"sequence_id\": \"42\", \"command\": \"pushall\"}}";
+              #     id(mqtt_client_id).publish(topic.c_str(), payload.c_str());
               else:
               - logger.log: "Bambu MQTT already connected and configured."
           else:
