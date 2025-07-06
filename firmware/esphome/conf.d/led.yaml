@@ -55,8 +55,20 @@ light:
       update_interval: 0.03s
       lambda: |-
         static float phase = 0.0;
-        phase += 0.03;
-        float breath = (sin(phase) + 1.0) / 2.0; // 0.0 to 1.0
+        phase += 0.01;
+        if (phase > 1.0) phase -= 1.0;
+        // Hold at max brightness for 50%, slower fade out (30%), fade in (20%)
+        float breath;
+        if (phase < 0.50f) {
+          breath = 1.0f; // Stay bright for 50% of the cycle
+        } else if (phase < 0.80f) {
+          // Slower ramp down (bright to dim)
+          breath = 1.0f - ((phase - 0.50f) / 0.30f) * 0.7f; // 1.0 to 0.3
+        } else {
+          // Ramp up (dim to bright)
+          breath = 0.3f + ((phase - 0.80f) / 0.20f) * 0.7f; // 0.3 to 1.0
+        }
+        breath = fmaxf(0.3f, fminf(breath, 1.0f));
         uint8_t brightness = 32 + uint8_t(breath * 198); // 32-230 (90% of 255 is ~230)
         for (int i = 0; i < it.size(); i++) {
           it[i] = Color(brightness, brightness, brightness);
