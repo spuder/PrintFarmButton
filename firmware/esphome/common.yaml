@@ -5,26 +5,24 @@ esphome:
   project:
     name: spuder.PrintFarmButton
     version: ${version}
-    # platformio_options:
-    # build_flags:
-    # - -DARDUINOJSON_DOCUMENT_SIZE=32768
-    # - -DMQTT_MAX_PACKET_SIZE=32768
-    # - -DARDUINOJSON_DEFAULT_NESTING_LIMIT=20
-    # - -DARDUINOJSON_STRING_BUFFER_SIZE=6144
-    # sdkconfig_options:
-    # - CONFIG_MQTT_OUTGOING_BUFFER_SIZE=32768
-    # - CONFIG_MQTT_INCOMING_BUFFER_SIZE=32768 # Increase LwIP memory for more TCP buffers
-    # - CONFIG_LWIP_TCP_SND_BUF_DEFAULT=16384
-    # - CONFIG_LWIP_TCP_WND_DEFAULT=16384
-    # - CONFIG_LWIP_TCP_RECVMBOX_SIZE=32
-    # - CONFIG_LWIP_TCP_ACCEPTMBOX_SIZE=32
-    # TODO: look for max_packet_size or message_size_limit or buffer_size
-
-    # lib_deps:
-    # - bblanchon/ArduinoJson@6.19.4
-    # lib_ignore:
-    # - ArduinoJson
-    # - Json
+  # platformio_options:
+  #   build_flags:
+  #   - -DARDUINOJSON_DOCUMENT_SIZE=32768
+  #   - -DMQTT_MAX_PACKET_SIZE=32768
+  #   - -DARDUINOJSON_DEFAULT_NESTING_LIMIT=20
+  #   - -DARDUINOJSON_STRING_BUFFER_SIZE=6144
+  #   sdkconfig_options:
+  #   - CONFIG_MQTT_OUTGOING_BUFFER_SIZE=32768
+  #   - CONFIG_MQTT_INCOMING_BUFFER_SIZE=32768 # Increase LwIP memory for more TCP buffers
+  #   - CONFIG_LWIP_TCP_SND_BUF_DEFAULT=16384
+  #   - CONFIG_LWIP_TCP_WND_DEFAULT=16384
+  #   - CONFIG_LWIP_TCP_RECVMBOX_SIZE=32
+  #   - CONFIG_LWIP_TCP_ACCEPTMBOX_SIZE=32
+  # lib_deps:
+  # - bblanchon/ArduinoJson@6.19.4
+  # lib_ignore:
+  # - ArduinoJson
+  # - Json
   on_boot:
     then:
     # - text_sensor.template.publish:
@@ -49,7 +47,8 @@ packages:
   update: !include conf.d/update.yaml
   version: !include conf.d/version.yaml
   scripts: !include conf.d/scripts.yaml
-  #debug: !include conf.d/debug.yaml
+  debug: !include conf.d/debug.yaml
+
 logger:
   level: VERBOSE
   logs:
@@ -69,3 +68,13 @@ improv_serial:
 
 api:
   reboot_timeout: 0s
+
+# TODO: Remove once crashing is fixed
+# https://discord.com/channels/429907082951524364/1390941483150082161/1391308828414578688
+external_components:
+- source:
+    type: git
+    url: https://github.com/ssieb/esphome
+    ref: mqtt
+  components: [ mqtt ]
+  refresh: 0s
