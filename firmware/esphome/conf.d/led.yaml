@@ -19,7 +19,7 @@ light:
   - pulse:
       name: Pulse
       transition_length: 0.3s
-      max_brightness: 100%
+      max_brightness: 90%
       min_brightness: 50%
       update_interval: 0.3s
   # - addressable_scan:
@@ -41,14 +41,14 @@ light:
           last_update = now;
         }
         for (int i = 0; i < num_leds; i++) {
-          it[i] = Color(0, 255, 0); // Green background
+          it[i] = Color(0, 230, 0); // Green background
         }
         // Place 2 pairs of moving dots: white then yellow
         for (int d = 0; d < num_dots; d++) {
           int dot_pos = (pos + (d * num_leds) / num_dots) % num_leds;
-          it[dot_pos] = Color(255, 255, 255); // First dot: white
+          it[dot_pos] = Color(230, 230, 230); // First dot: white
           int dot_pos2 = (dot_pos + 1) % num_leds;
-          it[dot_pos2] = Color(255, 255, 0); // Second dot: yellow
+          it[dot_pos2] = Color(230, 230, 0); // Second dot: yellow
         }
   - addressable_lambda:
       name: Bambu Idle
@@ -57,7 +57,7 @@ light:
         static float phase = 0.0;
         phase += 0.03;
         float breath = (sin(phase) + 1.0) / 2.0; // 0.0 to 1.0
-        uint8_t brightness = 32 + uint8_t(breath * 223); // 32-255
+        uint8_t brightness = 32 + uint8_t(breath * 198); // 32-230 (90% of 255 is ~230)
         for (int i = 0; i < it.size(); i++) {
           it[i] = Color(brightness, brightness, brightness);
         }
@@ -86,7 +86,7 @@ light:
             g = 1.0f - f * (1.0f - 0.31f); // 255/255 to 80/255
             b = 0.0f;
           }
-          it[i] = Color(uint8_t(r * 255), uint8_t(g * 255), uint8_t(b * 255));
+          it[i] = Color(uint8_t(r * 230), uint8_t(g * 230), uint8_t(b * 230));
         }
   - addressable_lambda:
       name: Bambu Error
@@ -97,5 +97,5 @@ light:
         step = (step + 1) % 10; // 0-9, 10 steps = 1.2s (0.12s interval)
         bool on = (step == 0 || step == 3); // On at step 0 and 3 (two blinks, spaced out)
         for (int i = 0; i < it.size(); i++) {
-          it[i] = on ? Color(255, 0, 0) : Color(80, 0, 0); // Dim red when off (brighter)
+          it[i] = on ? Color(230, 0, 0) : Color(80, 0, 0); // Dim red when off (brighter)
         }

@@ -47,7 +47,7 @@ packages:
   update: !include conf.d/update.yaml
   version: !include conf.d/version.yaml
   scripts: !include conf.d/scripts.yaml
-  debug: !include conf.d/debug.yaml
+  #debug: !include conf.d/debug.yaml
 
 logger:
   level: VERBOSE

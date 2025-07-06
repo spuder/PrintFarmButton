@@ -65,6 +65,17 @@ binary_sensor:
     then:
     - script.execute: update_led_color
 
+- platform: template
+  name: "Is Printing"
+  id: is_printing
+  lambda: |-
+    return id(is_printing).state;
+  icon: "mdi:printer-3d-nozzle"
+  internal: false
+  on_state:
+    then:
+    - script.execute: update_led_color
+
 script:
 - id: check_printago_status
   mode: queued
@@ -134,185 +145,6 @@ script:
       id(printer_name).publish_state("");  // Clear printer name
 
       ESP_LOGI("printago", "Cleared all printer status globals - all set to false");
-
-- id: update_led_color
-  mode: queued
-  then:
-  - if:
-      condition:
-        lambda: 'return id(cloud_connection).state == "Bambu";'
-        # https://wiki.bambulab.com/en/h2/manual/status-indicator-light-meanings
-      then:
-      - if:
-          condition:
-            lambda: 'return id(bambu_status_text).state == "IDLE";'
-          then:
-          - light.turn_on:
-              id: printfarmbutton_rgb
-              effect: bambu_idle
-              brightness: 90%
-          else:
-          - if:
-              condition:
-                lambda: 'return id(bambu_status_text).state == "PREPARING";'
-              then:
-              - light.turn_on:
-                  id: printfarmbutton_rgb
-                  effect: "Bambu Preparing"
-                  brightness: 90%
-              else:
-              - if:
-                  condition:
-                    lambda: 'return id(bambu_status_text).state == "PRINTING";'
-                  then:
-                  - light.turn_on:
-                      id: printfarmbutton_rgb
-                      red: 0.0
-                      green: 0.5
-                      blue: 1.0
-                      effect: none
-                      brightness: 90%
-                  else:
-                  - if:
-                      condition:
-                        lambda: 'return id(bambu_status_text).state == "ERROR";'
-                      then:
-                      - light.turn_on:
-                          id: printfarmbutton_rgb
-                          effect: bambu_error
-                          brightness: 90%
-                      else:
-                      - if:
-                          condition:
-                            lambda: 'return id(bambu_status_text).state == "COMPLETED";'
-                          then:
-                          - light.turn_on:
-                              id: printfarmbutton_rgb
-                              red: 0.0
-                              green: 1.0
-                              blue: 0.0
-                              effect: none
-                              brightness: 90%
-                          else:
-                          - if:
-                              condition:
-                                lambda: 'return id(bambu_status_text).state == "UNKNOWN";'
-                              then:
-                              - light.turn_on:
-                                  id: printfarmbutton_rgb
-                                  red: 0.8
-                                  green: 1.0
-                                  blue: 0.6
-                                  effect: none
-                                  brightness: 90%
-                              else:
-                              # TODO: Add Bambu-specific LED logic here
-                              - light.turn_on:
-                                  id: printfarmbutton_rgb
-                                  red: 1.0
-                                  green: 1.0
-                                  blue: 0.0
-                                  effect: none
-                                  brightness: 90%
-      else:
-      - if:
-          condition:
-            lambda: 'return id(cloud_connection).state == "Printago";'
-          then:
-          - if:
-              condition:
-                not:
-                - lambda: 'return id(printer_is_online_sensor).state;'
-              then: # LED white on offline
-
-              # - light.turn_on:
-              #     id: printfarmbutton_rgb
-              #     red: 1.0
-              #     green: 1.0
-              #     blue: 1.0
-              #     effect: none
-              #     brightness: 90%
-              else:
-              - if:
-                  condition:
-                    or:
-                    - lambda: 'return id(printer_has_error_sensor).state;'
-                    - lambda: 'return id(printer_has_warning_sensor).state;'
-                  then:
-                  - light.turn_on:
-                      id: printfarmbutton_rgb
-                      red: 1.0
-                      green: 0.0
-                      blue: 0.0
-                      effect: none
-                      brightness: 90%
-                  else:
-                  - if:
-                      condition:
-                        and:
-                        - lambda: 'return id(is_downloading).state;'
-                      then:
-                      - light.turn_on:
-                          id: printfarmbutton_rgb
-                          red: 0.0
-                          green: 1.0
-                          blue: 0.0
-                          effect: Left2Right
-                          brightness: 90%
-                      else:
-                      - if:
-                          condition:
-                            and:
-                            - lambda: 'return id(printer_confirmed_ready_sensor).state;'
-                            - lambda: 'return id(printer_is_available_sensor).state;'
-                          then:
-                          # Blue (Ready)
-                          - light.turn_on:
-                              id: printfarmbutton_rgb
-                              red: 0.0
-                              green: 0.0
-                              blue: 1.0
-                              effect: none
-                              brightness: 90%
-                          else:
-                          - if:
-                              condition:
-                                and:
-                                - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
-                                - lambda: 'return id(printer_is_available_sensor).state;'
-                              then:
-                              # Magenta (Set Ready)
-                              - light.turn_on:
-                                  id: printfarmbutton_rgb
-                                  red: 0.9
-                                  green: 0.0
-                                  blue: 0.7
-                                  effect: Pulse
-                                  brightness: 90%
-                              else:
-                              - if:
-                                  condition:
-                                    and:
-                                    - lambda: 'return !id(printer_is_available_sensor).state;'
-                                    - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
-                                  then:
-                                  # Green (Busy)
-                                  - light.turn_on:
-                                      id: printfarmbutton_rgb
-                                      red: 0.0
-                                      green: 1.0
-                                      blue: 0.0
-                                      effect: none
-                                      brightness: 90%
-                                  else:
-                                  # Fallback/default
-                                  - light.turn_on:
-                                      id: printfarmbutton_rgb
-                                      red: 1.0
-                                      green: 1.0
-                                      blue: 1.0
-                                      effect: none
-                                      brightness: 90%
 
 - id: mark_printer_ready
   mode: queued
@@ -491,15 +323,21 @@ text:
           id(printer_has_error_sensor).publish_state(error_state);
           id(printer_has_warning_sensor).publish_state(warning_state);
 
-          // Handle downloading state
+          // Handle downloading and printing states
           bool download_state = false;
+          bool printing_state = false;
           if (root.containsKey("state")) {
             const char* state = root["state"];
-            if (state != nullptr && strcmp(state, "PREPARE") == 0) {
-              download_state = true;
+            if (state != nullptr) {
+              if (strcmp(state, "PREPARE") == 0) {
+                download_state = true;
+              } else if (strcmp(state, "PRINTING") == 0) {
+                printing_state = true;
+              }
             }
           }
           id(is_downloading).publish_state(download_state);
+          id(is_printing).publish_state(printing_state);
         });
 
         // Subscribe to entities topic for confirmedReady
