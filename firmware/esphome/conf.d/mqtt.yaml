@@ -15,28 +15,28 @@ mqtt:
   skip_cert_cn_check: true
   # TODO: do I actaually need certifiate authority? 
   #TODO: set dynamically with set_ca_certificate()
-  certificate_authority: |
-    -----BEGIN CERTIFICATE-----
-    MIIDZTCCAk2gAwIBAgIUV1FckwXElyek1onFnQ9kL7Bk4N8wDQYJKoZIhvcNAQEL
-    BQAwQjELMAkGA1UEBhMCQ04xIjAgBgNVBAoMGUJCTCBUZWNobm9sb2dpZXMgQ28u
-    LCBMdGQxDzANBgNVBAMMBkJCTCBDQTAeFw0yMjA0MDQwMzQyMTFaFw0zMjA0MDEw
-    MzQyMTFaMEIxCzAJBgNVBAYTAkNOMSIwIAYDVQQKDBlCQkwgVGVjaG5vbG9naWVz
-    IENvLiwgTHRkMQ8wDQYDVQQDDAZCQkwgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
-    DwAwggEKAoIBAQDL3pnDdxGOk5Z6vugiT4dpM0ju+3Xatxz09UY7mbj4tkIdby4H
-    oeEdiYSZjc5LJngJuCHwtEbBJt1BriRdSVrF6M9D2UaBDyamEo0dxwSaVxZiDVWC
-    eeCPdELpFZdEhSNTaT4O7zgvcnFsfHMa/0vMAkvE7i0qp3mjEzYLfz60axcDoJLk
-    p7n6xKXI+cJbA4IlToFjpSldPmC+ynOo7YAOsXt7AYKY6Glz0BwUVzSJxU+/+VFy
-    /QrmYGNwlrQtdREHeRi0SNK32x1+bOndfJP0sojuIrDjKsdCLye5CSZIvqnbowwW
-    1jRwZgTBR29Zp2nzCoxJYcU9TSQp/4KZuWNVAgMBAAGjUzBRMB0GA1UdDgQWBBSP
-    NEJo3GdOj8QinsV8SeWr3US+HjAfBgNVHSMEGDAWgBSPNEJo3GdOj8QinsV8SeWr
-    3US+HjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQABlBIT5ZeG
-    fgcK1LOh1CN9sTzxMCLbtTPFF1NGGA13mApu6j1h5YELbSKcUqfXzMnVeAb06Htu
-    3CoCoe+wj7LONTFO++vBm2/if6Jt/DUw1CAEcNyqeh6ES0NX8LJRVSe0qdTxPJuA
-    BdOoo96iX89rRPoxeed1cpq5hZwbeka3+CJGV76itWp35Up5rmmUqrlyQOr/Wax6
-    itosIzG0MfhgUzU51A2P/hSnD3NDMXv+wUY/AvqgIL7u7fbDKnku1GzEKIkfH8hm
-    Rs6d8SCU89xyrwzQ0PR853irHas3WrHVqab3P+qNwR0YirL0Qk7Xt/q3O1griNg2
-    Blbjg3obpHo9
-    -----END CERTIFICATE-----
+  # certificate_authority: |
+  #   -----BEGIN CERTIFICATE-----
+  #   MIIDZTCCAk2gAwIBAgIUV1FckwXElyek1onFnQ9kL7Bk4N8wDQYJKoZIhvcNAQEL
+  #   BQAwQjELMAkGA1UEBhMCQ04xIjAgBgNVBAoMGUJCTCBUZWNobm9sb2dpZXMgQ28u
+  #   LCBMdGQxDzANBgNVBAMMBkJCTCBDQTAeFw0yMjA0MDQwMzQyMTFaFw0zMjA0MDEw
+  #   MzQyMTFaMEIxCzAJBgNVBAYTAkNOMSIwIAYDVQQKDBlCQkwgVGVjaG5vbG9naWVz
+  #   IENvLiwgTHRkMQ8wDQYDVQQDDAZCQkwgQ0EwggEiMA0GCSqGSIb3DQEBAQUAA4IB
+  #   DwAwggEKAoIBAQDL3pnDdxGOk5Z6vugiT4dpM0ju+3Xatxz09UY7mbj4tkIdby4H
+  #   oeEdiYSZjc5LJngJuCHwtEbBJt1BriRdSVrF6M9D2UaBDyamEo0dxwSaVxZiDVWC
+  #   eeCPdELpFZdEhSNTaT4O7zgvcnFsfHMa/0vMAkvE7i0qp3mjEzYLfz60axcDoJLk
+  #   p7n6xKXI+cJbA4IlToFjpSldPmC+ynOo7YAOsXt7AYKY6Glz0BwUVzSJxU+/+VFy
+  #   /QrmYGNwlrQtdREHeRi0SNK32x1+bOndfJP0sojuIrDjKsdCLye5CSZIvqnbowwW
+  #   1jRwZgTBR29Zp2nzCoxJYcU9TSQp/4KZuWNVAgMBAAGjUzBRMB0GA1UdDgQWBBSP
+  #   NEJo3GdOj8QinsV8SeWr3US+HjAfBgNVHSMEGDAWgBSPNEJo3GdOj8QinsV8SeWr
+  #   3US+HjAPBgNVHRMBAf8EBTADAQH/MA0GCSqGSIb3DQEBCwUAA4IBAQABlBIT5ZeG
+  #   fgcK1LOh1CN9sTzxMCLbtTPFF1NGGA13mApu6j1h5YELbSKcUqfXzMnVeAb06Htu
+  #   3CoCoe+wj7LONTFO++vBm2/if6Jt/DUw1CAEcNyqeh6ES0NX8LJRVSe0qdTxPJuA
+  #   BdOoo96iX89rRPoxeed1cpq5hZwbeka3+CJGV76itWp35Up5rmmUqrlyQOr/Wax6
+  #   itosIzG0MfhgUzU51A2P/hSnD3NDMXv+wUY/AvqgIL7u7fbDKnku1GzEKIkfH8hm
+  #   Rs6d8SCU89xyrwzQ0PR853irHas3WrHVqab3P+qNwR0YirL0Qk7Xt/q3O1griNg2
+  #   Blbjg3obpHo9
+  #   -----END CERTIFICATE-----
   clean_session: true
   enable_on_boot: false
   birth_message:
@@ -47,113 +47,15 @@ mqtt:
     payload:
   on_disconnect:
     then:
-    # TODO: clear mqtt settings
     - logger.log: "MQTT Disconnected!"
+    - if:
+        condition:
+          lambda: 'return id(cloud_connection).state == "Bambu";'
+        then:
+        - lambda: 'id(bambu_status_text).publish_state("UNKNOWN");'
+    - if:
+        condition:
+          lambda: 'return id(cloud_connection).state == "Printago";'
+        then:
+        - script.execute: clear_printago_status
     - script.execute: update_led_color
-  #TODO: subscribe_bambu_topics causes crashes
-  # on_connect:
-  #   then:
-  #   - if:
-  #       condition:
-  #         lambda: 'return id(cloud_connection).state == "Bambu";'
-  #       then:
-  #       - script.execute: subscribe_bambu_topics
-  #   - if:
-  #       condition:
-  #         lambda: 'return id(cloud_connection).state == "Printago";'
-  #       then:
-  #       - script.execute: subscribe_printago_topics
-  # on_json_message:
-  #   topic: "device/REDACTED/report"
-  #   then:
-  #   - lambda: |-
-
-  #       if (x.isNull()) {
-  #         ESP_LOGW("mqtt", "Received null JSON");
-  #         return;
-  #       }
-  #       if (!x.containsKey("print")) {
-  #         ESP_LOGD("mqtt", "No 'print' key found");
-  #         return;
-  #       }
-  #       auto print_obj = x["print"];
-  #       if (!print_obj.containsKey("gcode_state")) {
-  #         ESP_LOGD("mqtt", "No 'gcode_state' key found");
-  #         return;
-  #       }
-  #       const char* state = print_obj["gcode_state"];
-  #       if (state == nullptr) {
-  #         ESP_LOGD("mqtt", "gcode_state is null");
-  #         return;
-  #       }
-  #       if (strcmp(state, "RUNNING") == 0) {
-  #         ESP_LOGD("mqtt", "Print running");
-  #       } else if (strcmp(state, "FINISH") == 0) {
-  #         ESP_LOGD("mqtt", "Print finish");
-  #       } else {
-  #         ESP_LOGD("mqtt", "Print state: %s", state);
-  #       }
-
-  # on_json_message causes crashes due to std::string allocation
-  # Take a json message and estimate the parsing size here: https://arduinojson.org/v6/assistant/#/step3
-  # Even with stream parsing the esp32 is crashing
-  # Using a very primitive yet vey safe C-style string search to prevent crashes
-  # on_message:
-  # on_message:
-  #   topic: "device/REDACTED/report" #TODO: make dynamic
-  #   then:
-  #   - lambda: |-
-  #       ESP_LOGV("mqtt", "Payload length: %d", x.length());
-  #       if (!x.empty()) {
-  #         ESP_LOGV("mqtt", "Payload: %s", x.c_str());
-  #       } else {
-  #         ESP_LOGW("mqtt", "Received empty payload");
-  #         return;
-  #       }
-
-
-  # on_json_message:
-  #   topic: "device/REDACTED/report" #TODO: esphome doesn't support lambda topic, the serial number must be known at compile time
-  #   then:
-  #   - lambda: |-
-  #       if (x.isNull()) {
-  #         ESP_LOGW("mqtt", "Received null JSON");
-  #         return;
-  #       }
-  #       ESP_LOGV("mqtt", "Received JSON with %d keys", x.size());
-
-  #       if (!x.containsKey("print")) {
-  #         ESP_LOGD("mqtt", "No 'print' key found in JSON");
-  #         return;
-  #       } else {
-  #         ESP_LOGV("mqtt", "'print' key found in JSON");
-  #       }
-  #       auto print_obj = x["print"];
-  #       if (!print_obj.is<JsonObjectConst>()) {
-  #         ESP_LOGD("mqtt", "'print' is not a JSON object");
-  #         return;
-  #       }
-  #       if (!print_obj.containsKey("gcode_state")) {
-  #         ESP_LOGD("mqtt", "No 'gcode_state' key found");
-  #         return;
-  #       }
-  #       const char* state = print_obj["gcode_state"];
-  #       if (state == nullptr) {
-  #         ESP_LOGD("mqtt", "gcode_state is null");
-  #         return;
-  #       }
-
-  #       // Add detailed logging to inspect the string
-  #       std::string state_str(state);
-  #       ESP_LOGD("mqtt", "Inspecting gcode_state: '%s' (length: %d)", state_str.c_str(), state_str.length());
-  #       for (int i = 0; i < state_str.length(); i++) {
-  #         ESP_LOGD("mqtt", "  - char[%d]: '%c' (ASCII: %d)", i, state_str[i], (int)state_str[i]);
-  #       }
-
-  #       if (strcmp(state, "RUNNING") == 0) {
-  #         ESP_LOGI("mqtt", "Print is RUNNING");
-  #       } else if (strcmp(state, "FINISH") == 0) {
-  #         ESP_LOGI("mqtt", "Print is FINISHED");
-  #       } else {
-  #         ESP_LOGD("mqtt", "Print state: %s", state);
-  #       }
