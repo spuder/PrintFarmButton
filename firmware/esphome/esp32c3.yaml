@@ -6,3 +6,5 @@ esp32:
 
 packages:
   common: !include common.yaml
+
+psram:

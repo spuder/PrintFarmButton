@@ -4,3 +4,5 @@ esp32:
     type: esp-idf
 packages:
   common: !include common.yaml
+
+psram:

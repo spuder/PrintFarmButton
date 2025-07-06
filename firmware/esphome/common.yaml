@@ -5,6 +5,27 @@ esphome:
   project:
     name: spuder.PrintFarmButton
     version: ${version}
+
+  platformio_options:
+    build_flags:
+    - -DARDUINOJSON_DOCUMENT_SIZE=32768
+    - -DMQTT_MAX_PACKET_SIZE=32768
+    - -DARDUINOJSON_DEFAULT_NESTING_LIMIT=20
+    - -DARDUINOJSON_STRING_BUFFER_SIZE=6144
+    sdkconfig_options:
+    - CONFIG_MQTT_OUTGOING_BUFFER_SIZE=32768
+    - CONFIG_MQTT_INCOMING_BUFFER_SIZE=32768 # Increase LwIP memory for more TCP buffers
+    - CONFIG_LWIP_TCP_SND_BUF_DEFAULT=16384
+    - CONFIG_LWIP_TCP_WND_DEFAULT=16384
+    - CONFIG_LWIP_TCP_RECVMBOX_SIZE=32
+    - CONFIG_LWIP_TCP_ACCEPTMBOX_SIZE=32
+    # TODO: look for max_packet_size or message_size_limit or buffer_size
+
+    # lib_deps:
+    # - bblanchon/ArduinoJson@6.19.4
+    # lib_ignore:
+    # - ArduinoJson
+    # - Json
   on_boot:
     then:
     - light.turn_on:
@@ -26,12 +47,13 @@ packages:
   update: !include conf.d/update.yaml
   version: !include conf.d/version.yaml
   scripts: !include conf.d/scripts.yaml
+  debug: !include conf.d/debug.yaml
 logger:
-  # level: VERBOSE
-  # logs:
-  #   mqtt.component: VERBOSE
-  #   mqtt.client: VERBOSE
-  #   mqtt: VERBOSE
+  level: VERBOSE
+  logs:
+    mqtt.component: VERBOSE
+    mqtt.client: VERBOSE
+    mqtt: VERBOSE
 
 ota:
 - platform: esphome
