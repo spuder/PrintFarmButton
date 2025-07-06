@@ -9,6 +9,7 @@ text:
   icon: mdi:barcode
   web_server:
     sorting_group_id: bambu
+    sorting_weight: 3
   on_value:
     then:
     - script.execute: connect_mqtt
@@ -23,6 +24,7 @@ text:
   icon: mdi:lock
   web_server:
     sorting_group_id: bambu
+    sorting_weight: 4
   on_value:
     then:
     - script.execute: connect_mqtt
@@ -37,6 +39,7 @@ text:
   icon: mdi:ip
   web_server:
     sorting_group_id: bambu
+    sorting_weight: 2
   on_value:
     then:
     - script.execute: connect_mqtt
@@ -50,7 +53,7 @@ text:
   initial_value: "8883"
   web_server:
     sorting_group_id: bambu
-    sorting_weight: 8
+    sorting_weight: 5
   icon: "mdi:numeric"
   on_value:
     then:

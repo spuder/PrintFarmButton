@@ -20,5 +20,5 @@ text_sensor:
     # Log the status change for debugging
     - lambda: |-
         ESP_LOGI("main", "Bambu status changed to: %s", id(bambu_status_text).state.c_str());
-    # - script.execute: update_led_color
+    - script.execute: update_led_color
   state_topic:

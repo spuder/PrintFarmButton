@@ -25,15 +25,15 @@ esphome:
   # - Json
   on_boot:
     then:
-    # - text_sensor.template.publish:
-    #     id: bambu_status_text
-    #     state: "UNKNOWN"
-    - delay: 2s # Give time for components to initialize
-    - light.turn_on:
-        id: printfarmbutton_rgb
-        effect: Rainbow
-        brightness: 90%
-    - delay: 3s
+      # - text_sensor.template.publish:
+      #     id: bambu_status_text
+      #     state: "UNKNOWN"
+      # - delay: 2s # Give time for components to initialize
+      # - light.turn_on:
+      #     id: printfarmbutton_rgb
+      #     effect: "Rainbow"
+      #     brightness: 90%
+      # - delay: 3s
 
 packages:
   led: !include conf.d/led.yaml

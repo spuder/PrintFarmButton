@@ -48,12 +48,8 @@ mqtt:
   on_disconnect:
     then:
     # TODO: clear mqtt settings
-    - light.turn_on:
-        id: printfarmbutton_rgb
-        red: 1.0
-        green: 1.0
-        blue: 1.0
-        effect: None
+    - logger.log: "MQTT Disconnected!"
+    - script.execute: update_led_color
   #TODO: subscribe_bambu_topics causes crashes
   # on_connect:
   #   then:

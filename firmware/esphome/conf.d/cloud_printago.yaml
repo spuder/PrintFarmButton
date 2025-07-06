@@ -3,6 +3,7 @@ binary_sensor:
   name: "Printer Confirmed Ready"
   id: printer_confirmed_ready_sensor
   icon: "mdi:printer-check"
+  state_topic:
   on_state:
     then:
     - script.execute: update_led_color
@@ -12,6 +13,7 @@ binary_sensor:
   name: "Printer Is Available"
   id: printer_is_available_sensor
   icon: "mdi:printer"
+  state_topic:
   on_state:
     then:
     - script.execute: update_led_color
@@ -21,6 +23,7 @@ binary_sensor:
   name: "Printer Is Online"
   id: printer_is_online_sensor
   icon: "mdi:lan-connect"
+  state_topic:
   on_state:
     then:
     - script.execute: update_led_color
@@ -30,6 +33,7 @@ binary_sensor:
   name: "Printer Has Error"
   id: printer_has_error_sensor
   icon: "mdi:printer-alert"
+  state_topic:
   on_state:
     then:
     - script.execute: update_led_color
@@ -39,6 +43,7 @@ binary_sensor:
   name: "Printer Has Warning"
   id: printer_has_warning_sensor
   icon: "mdi:printer-warning"
+  state_topic:
   on_state:
     then:
     - script.execute: update_led_color
@@ -48,6 +53,7 @@ binary_sensor:
   name: "Is Downloading"
   id: is_downloading
   icon: "mdi:download"
+  state_topic: null
   internal: false
   on_state:
     then:
@@ -57,6 +63,7 @@ binary_sensor:
   name: "Is Printing"
   id: is_printing
   icon: "mdi:printer-3d-nozzle"
+  state_topic:
   internal: false
   on_state:
     then:

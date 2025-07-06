@@ -12,7 +12,7 @@ binary_sensor:
 
 text:
 - platform: template
-  name: "Bambu MQTT Port"
+  name: "Printago MQTT Port"
   id: mqtt_port_printago
   mode: text
   optimistic: true

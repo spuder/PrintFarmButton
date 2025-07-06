@@ -34,57 +34,59 @@ script:
               - mqtt.enable:
                   id: mqtt_client_id
                 # https://github.com/DutchDevelop/BLLEDController/blob/main/src/blled/mqttmanager.h#L34C16-L46
+                # https://github.com/Doridian/OpenBambuAPI/blob/main/mqtt.md#unsolicited-or-semi-solicited-reports
                 # Rumor is that A1 and P1 and X1 have different values for 'off', some use -1 while others use 255
                 # TODO: verify that all models share states
                 # TODO: A1 shows 'GCode State: RUNNING, stg_cur: 255', identify where 255 comes from
-                # | gcode_state | stg_cur | color | Description
+                # | gcode_state | stg_cur (p1s) | stg_cur (a1mini) | color | Description
                 # | ---         | ---     | ---   | --- 
-                # | IDLE        | -1/255      | White | Printer is idle (just powered on or waiting)
-                # | RUNNING     | -1/255      | White | Print file sent, preparing to start
-                # | RUNNING     | 2/255       | White | Bed is preheating
-                # | RUNNING     | 14/255      | OFF   | Nozzle cleaning (Lidar calibration)
-                # | RUNNING     | 1/255       | OFF   | Bed leveling (Lidar calibration)
-                # | RUNNING     | 8/255       | OFF   | Extrusion calibration (Lidar calibration)
-                # | RUNNING     | 0/255       | White | Printing in progress
-                # | FINISH      | -1/255      | Green | Print finished, bed lowered, filament retracted
-                # | FINISH      | -1/255      | Green | Waiting for user to open the door (BLLED logic)
-                # | FINISH      | -1/255      | White | Door opened, post-print state
-                # | FINISH      | -1/255      | OFF   | Printer inactive for 30 minutes after print
+                # | IDLE        | -1 | 0     | White | Printer is idle (just powered on or waiting)
+                # | RUNNING     | -1 | ?       | White | Print file sent, preparing to start
+                # | RUNNING     | 2 | ?        | White | Bed is preheating
+                # | RUNNING     | 14| ?       | OFF   | Nozzle cleaning (Lidar calibration)
+                # | RUNNING     | 1| ?        | OFF   | Bed leveling (Lidar calibration)
+                # | RUNNING     | 8| ?        | OFF   | Extrusion calibration (Lidar calibration)
+                # | RUNNING     | 0| ?        | White | Printing in progress
+                # | FINISH      | -1| ?       | Green | Print finished, bed lowered, filament retracted
+                # | FINISH      | -1| ?       | Green | Waiting for user to open the door (BLLED logic)
+                # | FINISH      | -1| ?       | White | Door opened, post-print state
+                # | FINISH      | -1| ?       | OFF   | Printer inactive for 30 minutes after print
               - lambda: |
                   // Subscribe to Bambu topics
                   if (!id(bambu_serial_number).state.empty()) {
                     std::string topic = "device/" + id(bambu_serial_number).state + "/report";
                     id(mqtt_client_id).subscribe_json(topic.c_str(), [=](const std::string &topic, JsonObjectConst root) {
+                      ESP_LOGVV("mqtt", "Received Bambu MQTT message");
                       if (!root.containsKey("print")) {
                         ESP_LOGV("mqtt", "No 'print' key in JSON");
                         return;
                       }
                       auto print_obj = root["print"];
                       if (!print_obj.containsKey("gcode_state")) {
-                        ESP_LOGV("mqtt", "No 'gcode_state' key in print object");
+                        ESP_LOGVV("mqtt", "No 'gcode_state' key in print object");
                         return;
                       }
                       if (!print_obj.containsKey("stg_cur")) {
-                        ESP_LOGV("mqtt", "No 'stg_cur' key in print object");
+                        ESP_LOGVV("mqtt", "No 'stg_cur' key in print object");
                         return;
                       }
                       const char* gcode_state = print_obj["gcode_state"];
-                      int stg_cur = print_obj["stg_cur"] | -9999;
+                      int stg_cur = print_obj["stg_cur"].as<int>();
                       std::string state_str(gcode_state ? gcode_state : "");
-                      bool is_special = (stg_cur == -1 || stg_cur == 255);
+                      ESP_LOGI("mqtt", "Parsed gcode_state='%s', stg_cur=%d", state_str.c_str(), stg_cur);
 
                       // Use a single status variable for Bambu state
                       std::string bambu_status = "UNKNOWN";
-                      if (state_str == "IDLE" && is_special) {
+                      if (state_str == "IDLE" && (stg_cur == -1 || stg_cur == 0)) {
                         ESP_LOGD("mqtt", "GCode State: IDLE, stg_cur: %d", stg_cur);
                         bambu_status = "IDLE";
-                      } else if (state_str == "RUNNING" && (is_special || stg_cur == 2 || stg_cur == 14 || stg_cur == 1 || stg_cur == 8)) {
+                      } else if (state_str == "RUNNING" && (stg_cur == -1 || stg_cur == 255 || stg_cur == 2 || stg_cur == 14 || stg_cur == 1 || stg_cur == 8)) {
                         ESP_LOGD("mqtt", "GCode State: RUNNING, stg_cur: %d (preparing)", stg_cur);
                         bambu_status = "PREPARING";
                       } else if (state_str == "RUNNING" && stg_cur == 0) {
                         ESP_LOGD("mqtt", "GCode State: RUNNING, stg_cur: 0 (printing)");
                         bambu_status = "PRINTING";
-                      } else if (state_str == "FINISH" && is_special) {
+                      } else if (state_str == "FINISH" && (stg_cur == -1 || stg_cur == 255)) {
                         ESP_LOGD("mqtt", "GCode State: FINISH, stg_cur: %d", stg_cur);
                         bambu_status = "COMPLETED";
                       } else if (state_str == "ERROR") {
@@ -149,164 +151,203 @@ script:
               id: mqtt_client_id
 
 - id: update_led_color
-  mode: queued
+  mode: restart
   then:
+  # Priority 1: WiFi disconnected -> rainbow effect
   - if:
       condition:
-        lambda: 'return id(cloud_connection).state == "Bambu";'
+        not:
+          wifi.connected:
       then:
-      # https://wiki.bambulab.com/en/h2/manual/status-indicator-light-meanings
+      - logger.log: "WiFi disconnected, showing rainbow effect"
+      - light.turn_off:
+          id: printfarmbutton_rgb
+      - delay: 100ms
+      - logger.log: "Turning on rainbow effect due to WiFi disconnected"
+      - light.turn_on:
+          id: printfarmbutton_rgb
+          effect: "Rainbow"
+          brightness: 90%
+      else:
+      # Priority 2: WiFi connected but MQTT disconnected -> rainbow effect
       - if:
           condition:
-            lambda: 'return id(bambu_status_text).state == "IDLE";'
+            not:
+            - lambda: 'return id(mqtt_client_id).is_connected();'
           then:
+          - logger.log: "WiFi connected but MQTT disconnected, showing rainbow effect"
+          - logger.log: "Turning on rainbow effect for MQTT not connected"
           - light.turn_on:
               id: printfarmbutton_rgb
-              effect: "Bambu Idle"
+              effect: "Rainbow"
               brightness: 90%
           else:
+          # Priority 3: WiFi connected, MQTT connected, cloud connection == "Bambu" -> do Bambu things
           - if:
               condition:
-                lambda: 'return id(bambu_status_text).state == "PREPARING";'
+                lambda: 'return id(cloud_connection).state == "Bambu";'
               then:
-              - light.turn_on:
-                  id: printfarmbutton_rgb
-                  effect: "Bambu Preparing"
-                  brightness: 90%
-              else:
+              # https://wiki.bambulab.com/en/h2/manual/status-indicator-light-meanings
               - if:
                   condition:
-                    lambda: 'return id(bambu_status_text).state == "PRINTING";'
+                    lambda: 'return id(bambu_status_text).state == "IDLE";'
                   then:
+                  - logger.log: "Bambu: Turning on Bambu Idle effect (IDLE)"
                   - light.turn_on:
                       id: printfarmbutton_rgb
-                      red: 0.0
-                      green: 0.5
-                      blue: 1.0
-                      effect: none
+                      effect: "Bambu Idle"
                       brightness: 90%
                   else:
                   - if:
                       condition:
-                        lambda: 'return id(bambu_status_text).state == "ERROR";'
+                        lambda: 'return id(bambu_status_text).state == "PREPARING";'
                       then:
+                      - logger.log: "Bambu: Turning on Bambu Preparing effect (PREPARING)"
                       - light.turn_on:
                           id: printfarmbutton_rgb
-                          effect: "Bambu Error"
+                          effect: "Bambu Preparing"
                           brightness: 90%
                       else:
                       - if:
                           condition:
-                            lambda: 'return id(bambu_status_text).state == "COMPLETED";'
+                            lambda: 'return id(bambu_status_text).state == "PRINTING";'
                           then:
+                          - logger.log: "Bambu: Turning on blue (PRINTING)"
                           - light.turn_on:
                               id: printfarmbutton_rgb
                               red: 0.0
-                              green: 1.0
-                              blue: 0.0
+                              green: 0.5
+                              blue: 1.0
                               effect: none
                               brightness: 90%
                           else:
                           - if:
                               condition:
-                                lambda: 'return id(bambu_status_text).state == "UNKNOWN";'
+                                lambda: 'return id(bambu_status_text).state == "ERROR";'
                               then:
+                              - logger.log: "Bambu: Turning on Bambu Error effect (ERROR)"
                               - light.turn_on:
                                   id: printfarmbutton_rgb
-                                  red: 0.8
-                                  green: 1.0
-                                  blue: 0.6
+                                  effect: "Bambu Error"
                                   brightness: 90%
                               else:
-                              # Fallback for any other Bambu state
-                              - light.turn_on:
-                                  id: printfarmbutton_rgb
-                                  effect: Rainbow
-                                  brightness: 90%
-      else:
-      - if:
-          condition:
-            lambda: 'return id(cloud_connection).state == "Printago";'
-          then:
-          # Only proceed with Printago logic if ALL credentials are present and non-empty
-          - if:
-              condition:
-                lambda: |
-                  return id(printer_id).state.empty() ||
-                         id(username_text).state.empty() ||
-                         id(api_key_text).state.empty();
-              then:
-              # Missing Printago credentials - show rainbow effect and do NOT reference Printago sensors
-              - light.turn_on:
-                  id: printfarmbutton_rgb
-                  red: 1.0
-                  green: 1.0
-                  blue: 1.0
-                  effect: Rainbow
-                  brightness: 90%
+                              - if:
+                                  condition:
+                                    lambda: 'return id(bambu_status_text).state == "COMPLETED";'
+                                  then:
+                                  - logger.log: "Bambu: Turning on green (COMPLETED)"
+                                  - light.turn_on:
+                                      id: printfarmbutton_rgb
+                                      red: 0.0
+                                      green: 1.0
+                                      blue: 0.0
+                                      effect: none
+                                      brightness: 90%
+                                  else:
+                                  - if:
+                                      condition:
+                                        lambda: 'return id(bambu_status_text).state == "UNKNOWN";'
+                                      then:
+                                      - logger.log: "Bambu: Turning on fallback color (UNKNOWN)"
+                                      - light.turn_on:
+                                          id: printfarmbutton_rgb
+                                          red: 0.8
+                                          green: 1.0
+                                          blue: 0.6
+                                          brightness: 90%
+                                      else:
+                                      # Fallback for any other Bambu state
+                                      - logger.log: "Bambu: Turning on fallback rainbow for unknown state"
+                                      - light.turn_on:
+                                          id: printfarmbutton_rgb
+                                          effect: "Rainbow"
+                                          brightness: 90%
               else:
-              # All credentials present, safe to reference Printago sensors
+              # Priority 4: WiFi connected, MQTT connected, cloud connection == "Printago" -> do Printago things
               - if:
                   condition:
-                    not:
-                    - lambda: 'return id(printer_is_online_sensor).state;'
+                    lambda: 'return id(cloud_connection).state == "Printago";'
                   then:
-                  # Printer offline - turn off LED
-                  - light.turn_off:
-                      id: printfarmbutton_rgb
-                  else:
+                  # Only proceed with Printago logic if ALL credentials are present and non-empty
                   - if:
                       condition:
-                        or:
-                        - lambda: 'return id(printer_has_error_sensor).state;'
-                        - lambda: 'return id(printer_has_warning_sensor).state;'
+                        lambda: |
+                          return id(printer_id).state.empty() ||
+                                 id(username_text).state.empty() ||
+                                 id(api_key_text).state.empty();
                       then:
+                      # Missing Printago credentials - show rainbow effect and do NOT reference Printago sensors
+                      - logger.log: "Printago: Missing credentials, showing rainbow"
                       - light.turn_on:
                           id: printfarmbutton_rgb
-                          red: 1.0
-                          green: 0.0
-                          blue: 0.0
-                          effect: none
+                          effect: "Rainbow"
                           brightness: 90%
                       else:
+                      # All credentials present, safe to reference Printago sensors
                       - if:
                           condition:
-                            and:
-                            - lambda: 'return id(is_downloading).state;'
-                            - not:
-                              - lambda: 'return id(is_printing).state;'
+                            not:
+                            - lambda: 'return id(printer_is_online_sensor).state;'
                           then:
-                          - light.turn_on:
+                          # Printer offline - turn off LED
+                          - logger.log: "Printago: Printer offline, turning off LED"
+                          - light.turn_off:
                               id: printfarmbutton_rgb
-                              effect: "Left2Right"
-                              brightness: 90%
                           else:
                           - if:
                               condition:
-                                lambda: 'return id(is_printing).state;'
+                                or:
+                                - lambda: 'return id(printer_has_error_sensor).state;'
+                                - lambda: 'return id(printer_has_warning_sensor).state;'
                               then:
+                              - logger.log: "Printago: Printer has error or warning, turning on red"
                               - light.turn_on:
                                   id: printfarmbutton_rgb
-                                  red: 0.0
-                                  green: 0.5
-                                  blue: 1.0
-                                  effect: none
-                                  brightness: 90%
-                              else:
-                              # Default for Printago (online, no other state) is green
-                              - light.turn_on:
-                                  id: printfarmbutton_rgb
-                                  red: 0.0
-                                  green: 1.0
+                                  red: 1.0
+                                  green: 0.0
                                   blue: 0.0
                                   effect: none
                                   brightness: 90%
-          else:
-          # Fallback for when no cloud provider is selected or in an unknown state
-          - light.turn_on:
-              id: printfarmbutton_rgb
-              red: 1.0
-              green: 1.0
-              blue: 1.0
-              effect: Rainbow
-              brightness: 90%
+                              else:
+                              - if:
+                                  condition:
+                                    and:
+                                    - lambda: 'return id(is_downloading).state;'
+                                    - not:
+                                      - lambda: 'return id(is_printing).state;'
+                                  then:
+                                  - logger.log: "Printago: Downloading but not printing, turning on Left2Right"
+                                  - light.turn_on:
+                                      id: printfarmbutton_rgb
+                                      effect: "Left2Right"
+                                      brightness: 90%
+                                  else:
+                                  - if:
+                                      condition:
+                                        lambda: 'return id(is_printing).state;'
+                                      then:
+                                      - logger.log: "Printago: Printing, turning on blue"
+                                      - light.turn_on:
+                                          id: printfarmbutton_rgb
+                                          red: 0.0
+                                          green: 0.5
+                                          blue: 1.0
+                                          effect: none
+                                          brightness: 90%
+                                      else:
+                                      # Default for Printago (online, no other state) is green
+                                      - logger.log: "Printago: Online, turning on green"
+                                      - light.turn_on:
+                                          id: printfarmbutton_rgb
+                                          red: 0.0
+                                          green: 1.0
+                                          blue: 0.0
+                                          effect: none
+                                          brightness: 90%
+                  else:
+                  # Cloud connection is neither Bambu nor Printago, show rainbow
+                  - logger.log: "Unknown cloud connection, showing rainbow"
+                  - light.turn_on:
+                      id: printfarmbutton_rgb
+                      effect: "Rainbow"
+                      brightness: 90%
