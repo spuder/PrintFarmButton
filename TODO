@@ -28,3 +28,4 @@
 [x] Remove hard coded mqtt cert for bambu
 [ ] Research impelment NTP so that leds can be in sync
 [ ] Create automation to update bambu cert
+[ ] Fix PSRAM on c3
