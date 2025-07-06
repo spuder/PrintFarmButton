@@ -50,3 +50,52 @@ light:
           int dot_pos2 = (dot_pos + 1) % num_leds;
           it[dot_pos2] = Color(255, 255, 0); // Second dot: yellow
         }
+  - addressable_lambda:
+      name: Bambu Idle
+      update_interval: 0.03s
+      lambda: |-
+        static float phase = 0.0;
+        phase += 0.03;
+        float breath = (sin(phase) + 1.0) / 2.0; // 0.0 to 1.0
+        uint8_t brightness = 32 + uint8_t(breath * 223); // 32-255
+        for (int i = 0; i < it.size(); i++) {
+          it[i] = Color(brightness, brightness, brightness);
+        }
+  - addressable_lambda:
+      name: Bambu Preparing
+      update_interval: 0.03s
+      lambda: |-
+        int num_leds = it.size();
+        static float phase = 0.0;
+        phase += 0.03 * (1.0 / 0.03) / (33.0 * 1.2); // Slow down by 20%
+        if (phase > 1.0) phase -= 1.0;
+        for (int i = 0; i < num_leds; i++) {
+          float t = (float(i) / num_leds + phase);
+          t = fmodf(t, 1.0f);
+          float r, g, b;
+          if (t < 0.5f) {
+            // Orange to Yellow
+            float f = t / 0.5f;
+            r = 1.0f;
+            g = 0.31f + f * (1.0f - 0.31f); // 80/255 to 255/255
+            b = 0.0f;
+          } else {
+            // Yellow to Orange
+            float f = (t - 0.5f) / 0.5f;
+            r = 1.0f;
+            g = 1.0f - f * (1.0f - 0.31f); // 255/255 to 80/255
+            b = 0.0f;
+          }
+          it[i] = Color(uint8_t(r * 255), uint8_t(g * 255), uint8_t(b * 255));
+        }
+  - addressable_lambda:
+      name: Bambu Error
+      update_interval: 0.12s
+      lambda: |-
+        // Blink twice, then pause (slightly faster, dim red when off)
+        static int step = 0;
+        step = (step + 1) % 10; // 0-9, 10 steps = 1.2s (0.12s interval)
+        bool on = (step == 0 || step == 3); // On at step 0 and 3 (two blinks, spaced out)
+        for (int i = 0; i < it.size(); i++) {
+          it[i] = on ? Color(255, 0, 0) : Color(80, 0, 0); // Dim red when off (brighter)
+        }

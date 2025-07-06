@@ -1,0 +1,23 @@
+# Valid states are
+# - "UNKNOWN"
+# - "IDLE"
+# - "PREPARING"
+# - "PRINTING"
+# - "COMPLETED"
+# - "ERROR"
+
+text_sensor:
+- platform: template
+  name: "Bambu Status"
+  id: bambu_status_text
+  icon: "mdi:printer-3d"
+  internal: false
+  web_server:
+    sorting_group_id: bambu
+    sorting_weight: 1
+  on_value:
+    then:
+    # Log the status change for debugging
+    - logger.log: "Bambu status changed to: ${id(bambu_status_text).state}"
+    - script.execute: update_led_color
+  state_topic:

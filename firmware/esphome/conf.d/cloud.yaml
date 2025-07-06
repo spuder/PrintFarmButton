@@ -20,4 +20,7 @@ select:
   state_topic:
   on_value:
     then:
+    - text_sensor.template.publish:
+        id: bambu_status_text
+        state: "UNKNOWN"
     - script.execute: connect_mqtt

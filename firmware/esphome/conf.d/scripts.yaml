@@ -33,6 +33,71 @@ script:
                   id(last_cloud_state) = "Bambu";
               - mqtt.enable:
                   id: mqtt_client_id
+                # https://github.com/DutchDevelop/BLLEDController/blob/main/src/blled/mqttmanager.h#L34C16-L46
+                # Rumor is that A1 and P1 and X1 have different values for 'off', some use -1 while others use 255
+                # TODO: verify that all models share states
+                # TODO: A1 shows 'GCode State: RUNNING, stg_cur: 255', identify where 255 comes from
+                # | gcode_state | stg_cur | color | Description
+                # | ---         | ---     | ---   | --- 
+                # | IDLE        | -1      | White | Printer is idle (just powered on or waiting)
+                # | RUNNING     | -1      | White | Print file sent, preparing to start
+                # | RUNNING     | 2       | White | Bed is preheating
+                # | RUNNING     | 14      | OFF   | Nozzle cleaning (Lidar calibration)
+                # | RUNNING     | 1       | OFF   | Bed leveling (Lidar calibration)
+                # | RUNNING     | 8       | OFF   | Extrusion calibration (Lidar calibration)
+                # | RUNNING     | 0       | White | Printing in progress
+                # | FINISH      | -1      | Green | Print finished, bed lowered, filament retracted
+                # | FINISH      | -1      | Green | Waiting for user to open the door (BLLED logic)
+                # | FINISH      | -1      | White | Door opened, post-print state
+                # | FINISH      | -1      | OFF   | Printer inactive for 30 minutes after print
+              - lambda: |
+                  // Subscribe to Bambu topics
+                  if (!id(bambu_serial_number).state.empty()) {
+                    std::string topic = "device/" + id(bambu_serial_number).state + "/report";
+                    id(mqtt_client_id).subscribe_json(topic.c_str(), [=](const std::string &topic, JsonObjectConst root) {
+                      if (!root.containsKey("print")) {
+                        ESP_LOGV("mqtt", "No 'print' key in JSON");
+                        return;
+                      }
+                      auto print_obj = root["print"];
+                      if (!print_obj.containsKey("gcode_state")) {
+                        ESP_LOGV("mqtt", "No 'gcode_state' key in print object");
+                        return;
+                      }
+                      if (!print_obj.containsKey("stg_cur")) {
+                        ESP_LOGV("mqtt", "No 'stg_cur' key in print object");
+                        return;
+                      }
+                      const char* gcode_state = print_obj["gcode_state"];
+                      int stg_cur = print_obj["stg_cur"] | -9999;
+                      std::string state_str(gcode_state ? gcode_state : "");
+                      bool is_special = (stg_cur == -1 || stg_cur == 255);
+
+                      // Use a single status variable for Bambu state
+                      std::string bambu_status = "UNKNOWN";
+                      if (state_str == "IDLE" && is_special) {
+                        ESP_LOGD("mqtt", "GCode State: IDLE, stg_cur: %d", stg_cur);
+                        bambu_status = "IDLE";
+                      } else if (state_str == "RUNNING" && (is_special || stg_cur == 2 || stg_cur == 14 || stg_cur == 1 || stg_cur == 8)) {
+                        ESP_LOGD("mqtt", "GCode State: RUNNING, stg_cur: %d (preparing)", stg_cur);
+                        bambu_status = "PREPARING";
+                      } else if (state_str == "RUNNING" && stg_cur == 0) {
+                        ESP_LOGD("mqtt", "GCode State: RUNNING, stg_cur: 0 (printing)");
+                        bambu_status = "PRINTING";
+                      } else if (state_str == "FINISH" && is_special) {
+                        ESP_LOGD("mqtt", "GCode State: FINISH, stg_cur: %d", stg_cur);
+                        bambu_status = "COMPLETED";
+                      } else if (state_str == "ERROR") {
+                        ESP_LOGD("mqtt", "GCode State: ERROR, stg_cur: %d", stg_cur);
+                        bambu_status = "ERROR";
+                      } else {
+                        ESP_LOGD("mqtt", "GCode State: %s, stg_cur: %d (no direct mapping)", state_str.c_str(), stg_cur);
+                      }
+                      id(bambu_status_text).publish_state(bambu_status);
+                    });
+                    
+                    ESP_LOGI("mqtt", "Subscribed to Bambu topic: %s", topic.c_str());
+                  }
               else:
               - logger.log: "Bambu MQTT already connected and configured."
           else:
