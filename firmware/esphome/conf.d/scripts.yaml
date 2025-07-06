@@ -221,13 +221,14 @@ script:
                               # Fallback for any other Bambu state
                               - light.turn_on:
                                   id: printfarmbutton_rgb
-                                  effect: "Rainbow"
+                                  effect: Rainbow
                                   brightness: 90%
       else:
       - if:
           condition:
             lambda: 'return id(cloud_connection).state == "Printago";'
           then:
+          # Only proceed with Printago logic if ALL credentials are present and non-empty
           - if:
               condition:
                 lambda: |
@@ -235,84 +236,77 @@ script:
                          id(username_text).state.empty() ||
                          id(api_key_text).state.empty();
               then:
-              # Missing Printago credentials - show rainbow effect
+              # Missing Printago credentials - show rainbow effect and do NOT reference Printago sensors
               - light.turn_on:
                   id: printfarmbutton_rgb
-                  effect: "Rainbow"
+                  red: 1.0
+                  green: 1.0
+                  blue: 1.0
+                  effect: Rainbow
                   brightness: 90%
               else:
+              # All credentials present, safe to reference Printago sensors
               - if:
                   condition:
-                    lambda: |
-                      return id(printer_id).state.empty() ||
-                             id(username_text).state.empty() ||
-                             id(api_key_text).state.empty();
+                    not:
+                    - lambda: 'return id(printer_is_online_sensor).state;'
                   then:
-                  # Missing Printago credentials - show rainbow effect
-                  - light.turn_on:
+                  # Printer offline - turn off LED
+                  - light.turn_off:
                       id: printfarmbutton_rgb
-                      effect: "Rainbow"
-                      brightness: 90%
                   else:
                   - if:
                       condition:
-                        not:
-                        - lambda: 'return id(printer_is_online_sensor).state;'
+                        or:
+                        - lambda: 'return id(printer_has_error_sensor).state;'
+                        - lambda: 'return id(printer_has_warning_sensor).state;'
                       then:
-                      # LED white on offline
-                      # Turn light off when offline
-                      - light.turn_off:
+                      - light.turn_on:
                           id: printfarmbutton_rgb
+                          red: 1.0
+                          green: 0.0
+                          blue: 0.0
+                          effect: none
+                          brightness: 90%
                       else:
                       - if:
                           condition:
-                            or:
-                            - lambda: 'return id(printer_has_error_sensor).state;'
-                            - lambda: 'return id(printer_has_warning_sensor).state;'
+                            and:
+                            - lambda: 'return id(is_downloading).state;'
+                            - not:
+                              - lambda: 'return id(is_printing).state;'
                           then:
                           - light.turn_on:
                               id: printfarmbutton_rgb
-                              red: 1.0
-                              green: 0.0
-                              blue: 0.0
-                              effect: none
+                              effect: "Left2Right"
                               brightness: 90%
                           else:
                           - if:
                               condition:
-                                and:
-                                - lambda: 'return id(is_downloading).state;'
-                                - not:
-                                  - lambda: 'return id(is_printing).state;'
+                                lambda: 'return id(is_printing).state;'
                               then:
                               - light.turn_on:
                                   id: printfarmbutton_rgb
-                                  effect: "Left2Right"
+                                  red: 0.0
+                                  green: 0.5
+                                  blue: 1.0
+                                  effect: none
                                   brightness: 90%
                               else:
-                              - if:
-                                  condition:
-                                    lambda: 'return id(is_printing).state;'
-                                  then:
-                                  - light.turn_on:
-                                      id: printfarmbutton_rgb
-                                      red: 0.0
-                                      green: 0.5
-                                      blue: 1.0
-                                      effect: none
-                                      brightness: 90%
-                                  else:
-                                  # Default for Printago (online, no other state) is green
-                                  - light.turn_on:
-                                      id: printfarmbutton_rgb
-                                      red: 0.0
-                                      green: 1.0
-                                      blue: 0.0
-                                      effect: none
-                                      brightness: 90%
+                              # Default for Printago (online, no other state) is green
+                              - light.turn_on:
+                                  id: printfarmbutton_rgb
+                                  red: 0.0
+                                  green: 1.0
+                                  blue: 0.0
+                                  effect: none
+                                  brightness: 90%
           else:
           # Fallback for when no cloud provider is selected or in an unknown state
           - light.turn_on:
               id: printfarmbutton_rgb
-              effect: "Rainbow"
+              red: 1.0
+              green: 1.0
+              blue: 1.0
+              effect: Rainbow
               brightness: 90%

@@ -2,8 +2,6 @@ binary_sensor:
 - platform: template
   name: "Printer Confirmed Ready"
   id: printer_confirmed_ready_sensor
-  lambda: |-
-    return id(printer_confirmed_ready_sensor).state;
   icon: "mdi:printer-check"
   on_state:
     then:
@@ -13,8 +11,6 @@ binary_sensor:
 - platform: template
   name: "Printer Is Available"
   id: printer_is_available_sensor
-  lambda: |-
-    return id(printer_is_available_sensor).state;
   icon: "mdi:printer"
   on_state:
     then:
@@ -24,8 +20,6 @@ binary_sensor:
 - platform: template
   name: "Printer Is Online"
   id: printer_is_online_sensor
-  lambda: |-
-    return id(printer_is_online_sensor).state;
   icon: "mdi:lan-connect"
   on_state:
     then:
@@ -35,8 +29,6 @@ binary_sensor:
 - platform: template
   name: "Printer Has Error"
   id: printer_has_error_sensor
-  lambda: |-
-    return id(printer_has_error_sensor).state;
   icon: "mdi:printer-alert"
   on_state:
     then:
@@ -46,8 +38,6 @@ binary_sensor:
 - platform: template
   name: "Printer Has Warning"
   id: printer_has_warning_sensor
-  lambda: |-
-    return id(printer_has_warning_sensor).state;
   icon: "mdi:printer-warning"
   on_state:
     then:
@@ -57,8 +47,6 @@ binary_sensor:
 - platform: template
   name: "Is Downloading"
   id: is_downloading
-  lambda: |-
-    return id(is_downloading).state;
   icon: "mdi:download"
   internal: false
   on_state:
@@ -68,8 +56,6 @@ binary_sensor:
 - platform: template
   name: "Is Printing"
   id: is_printing
-  lambda: |-
-    return id(is_printing).state;
   icon: "mdi:printer-3d-nozzle"
   internal: false
   on_state:
