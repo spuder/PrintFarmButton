@@ -24,3 +24,4 @@ select:
         id: bambu_status_text
         state: "UNKNOWN"
     - script.execute: connect_mqtt
+    - script.execute: check_printago_status

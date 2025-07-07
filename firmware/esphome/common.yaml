@@ -52,12 +52,12 @@ packages:
   #debug: !include conf.d/debug.yaml
 
 logger:
-  level: VERBOSE
-  logs:
-    mqtt.component: VERBOSE
-    mqtt.client: VERBOSE
-    mqtt: VERBOSE
-    http_request: VERBOSE
+  # level: VERBOSE
+  # logs:
+  #   mqtt.component: VERBOSE
+  #   mqtt.client: VERBOSE
+  #   mqtt: VERBOSE
+  #   http_request: VERBOSE
 
 ota:
 - platform: esphome

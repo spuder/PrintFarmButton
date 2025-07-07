@@ -30,3 +30,7 @@
 [ ] Create automation to update bambu cert
 [x] Fix PSRAM on c3
 [ ] Printago report 429 error for when exceeding rate limit
+[x] Fix switching from printago to bambu cauess TLS error
+[ ] Switching from bambu to printago requires manual sync
+[ ] Support resubscribing on reconnect to mqtt
+[ ] Support 
