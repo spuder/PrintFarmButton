@@ -297,6 +297,7 @@ script:
                             not:
                             - lambda: 'return id(printer_is_online_sensor).state;'
                           then:
+                          # LED white on offline
                           # Printer offline - turn off LED
                           - logger.log: "Printago: Printer offline, turning off LED"
                           - light.turn_off:
@@ -308,7 +309,6 @@ script:
                                 - lambda: 'return id(printer_has_error_sensor).state;'
                                 - lambda: 'return id(printer_has_warning_sensor).state;'
                               then:
-                              - logger.log: "Printago: Printer has error or warning, turning on red"
                               - light.turn_on:
                                   id: printfarmbutton_rgb
                                   red: 1.0
@@ -321,37 +321,68 @@ script:
                                   condition:
                                     and:
                                     - lambda: 'return id(is_downloading).state;'
-                                    - not:
-                                      - lambda: 'return id(is_printing).state;'
                                   then:
-                                  - logger.log: "Printago: Downloading but not printing, turning on Left2Right"
                                   - light.turn_on:
                                       id: printfarmbutton_rgb
-                                      effect: "Left2Right"
+                                      red: 0.0
+                                      green: 1.0
+                                      blue: 0.0
+                                      effect: Left2Right
                                       brightness: 90%
                                   else:
                                   - if:
                                       condition:
-                                        lambda: 'return id(is_printing).state;'
+                                        and:
+                                        - lambda: 'return id(printer_confirmed_ready_sensor).state;'
+                                        - lambda: 'return id(printer_is_available_sensor).state;'
                                       then:
-                                      - logger.log: "Printago: Printing, turning on blue"
+                                      # Blue (Ready)
                                       - light.turn_on:
                                           id: printfarmbutton_rgb
                                           red: 0.0
-                                          green: 0.5
+                                          green: 0.0
                                           blue: 1.0
                                           effect: none
                                           brightness: 90%
                                       else:
-                                      # Default for Printago (online, no other state) is green
-                                      - logger.log: "Printago: Online, turning on green"
-                                      - light.turn_on:
-                                          id: printfarmbutton_rgb
-                                          red: 0.0
-                                          green: 1.0
-                                          blue: 0.0
-                                          effect: none
-                                          brightness: 90%
+                                      - if:
+                                          condition:
+                                            and:
+                                            - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                                            - lambda: 'return id(printer_is_available_sensor).state;'
+                                          then:
+                                          # Magenta (Set Ready)
+                                          - light.turn_on:
+                                              id: printfarmbutton_rgb
+                                              red: 0.9
+                                              green: 0.0
+                                              blue: 0.7
+                                              effect: Pulse
+                                              brightness: 90%
+                                          else:
+                                          - if:
+                                              condition:
+                                                and:
+                                                - lambda: 'return !id(printer_is_available_sensor).state;'
+                                                - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
+                                              then:
+                                              # Green (Busy)
+                                              - light.turn_on:
+                                                  id: printfarmbutton_rgb
+                                                  red: 0.0
+                                                  green: 1.0
+                                                  blue: 0.0
+                                                  effect: none
+                                                  brightness: 90%
+                                              else:
+                                              # Fallback/default
+                                              - light.turn_on:
+                                                  id: printfarmbutton_rgb
+                                                  red: 1.0
+                                                  green: 1.0
+                                                  blue: 1.0
+                                                  effect: none
+                                                  brightness: 80%
                   else:
                   # Cloud connection is neither Bambu nor Printago, show rainbow
                   - logger.log: "Unknown cloud connection, showing rainbow"
