@@ -22,10 +22,11 @@
 [ ] Make auto update permenant so it survives updates
 [x] Why does it always say there is an update available? 
 [ ] Press and hold button to mark print as failed
-[ ] 90% led threashold isn't sticking causing it to melt, make it permenantly 90% max
+[x] 90% led threashold isn't sticking causing it to melt, make it permenantly 90% max
 [ ] When wifi credentials are lost, it is defaulting to white at 100% led, make it 
 [ ] on_connect for mqtt when it is bambu, do a push all `{"pushing": {"sequence_id": "123", "command": "pushall"}}` to `device/SERIAL/request`
 [x] Remove hard coded mqtt cert for bambu
 [ ] Research impelment NTP so that leds can be in sync
 [ ] Create automation to update bambu cert
-[ ] Fix PSRAM on c3
+[x] Fix PSRAM on c3
+[ ] Printago report 429 error for when exceeding rate limit

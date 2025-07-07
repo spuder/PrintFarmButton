@@ -79,9 +79,15 @@ script:
         - lambda: 'return !id(printer_id).state.empty();'
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
-        - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
         - lambda: 'return id(cloud_connection).state == "Printago";'
       then:
+      - lambda: |-
+          std::string url = "https://api.printago.io/v1/printers/" + id(printer_id).state;
+          std::string auth = "ApiKey " + id(api_key_text).state;
+          std::string storeid = id(username_text).state;
+          ESP_LOGI("printago", "HTTP GET URL: %s", url.c_str());
+          ESP_LOGI("printago", "Header authorization: %s", auth.c_str());
+          ESP_LOGI("printago", "Header x-printago-storeid: %s", storeid.c_str());
       - http_request.get:
           url: !lambda |-
             return "https://api.printago.io/v1/printers/" + id(printer_id).state;
