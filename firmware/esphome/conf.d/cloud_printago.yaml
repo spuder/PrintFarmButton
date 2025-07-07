@@ -94,11 +94,15 @@ script:
           request_headers:
             authorization: !lambda |-
               static std::string key;
-              key = "ApiKey " + id(api_key_text).state;
+              std::string raw_key = id(api_key_text).state;
+              raw_key.erase(std::remove_if(raw_key.begin(), raw_key.end(), ::isspace), raw_key.end());
+              key = "ApiKey " + raw_key;
               return key.c_str();
             x-printago-storeid: !lambda |-
               static std::string store;
-              store = id(username_text).state;
+              std::string raw_store = id(username_text).state;
+              raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
+              store = raw_store;
               return store.c_str();
           capture_response: true
           max_response_buffer_size: 2048
@@ -169,11 +173,15 @@ script:
           request_headers:
             authorization: !lambda |-
               static std::string key;
-              key = "ApiKey " + id(api_key_text).state;
+              std::string raw_key = id(api_key_text).state;
+              raw_key.erase(std::remove_if(raw_key.begin(), raw_key.end(), ::isspace), raw_key.end());
+              key = "ApiKey " + raw_key;
               return key.c_str();
             x-printago-storeid: !lambda |-
               static std::string store;
-              store = id(username_text).state;
+              std::string raw_store = id(username_text).state;
+              raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
+              store = raw_store;
               return store.c_str();
             content-type: application/json
           body: !lambda |-
