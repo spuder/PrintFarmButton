@@ -33,4 +33,5 @@
 [x] Fix switching from printago to bambu cauess TLS error
 [ ] Switching from bambu to printago requires manual sync
 [ ] Support resubscribing on reconnect to mqtt
-[ ] Support 
+[ ] esphome support template for on_birth topic. 
+[ ] mqtt support mac address for name (pending PR)
