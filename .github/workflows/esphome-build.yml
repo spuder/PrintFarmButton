@@ -165,9 +165,14 @@ jobs:
               fi
               
               # Add project field to each build in the manifest
-              jq --arg project "$project_name" '.builds[] |= . + {"project": $project}' "downloaded-artifacts/$build_name/manifest.json" > temp_manifest.json
-              jq --slurpfile new temp_manifest.json '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
-              rm temp_manifest.json
+              # First check if builds array exists and is not null
+              if jq -e '.builds and (.builds | type == "array") and (.builds | length > 0)' "downloaded-artifacts/$build_name/manifest.json" > /dev/null; then
+                jq --arg project "$project_name" '.builds[] |= . + {"project": $project}' "downloaded-artifacts/$build_name/manifest.json" > temp_manifest.json
+                jq --slurpfile new temp_manifest.json '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+                rm temp_manifest.json
+              else
+                echo "Warning: Invalid or empty builds array in $build_name/manifest.json, skipping"
+              fi
             else
               echo "Warning: manifest for $build_name not found, creating basic entry"
               chip_family="ESP32"
