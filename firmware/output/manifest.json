@@ -1,16 +1,29 @@
 {
   "name": "PrintFarmButton",
-  "version": "1.0.11",
+  "version": "1.2.3",
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "ota": {
-        "path": "printfarmbutton-esp32s3.ota.bin",
-        "md5": "cb67a00f54c15341d437fa61ad36c513"
+        "path": "pfb-s3-zero-esp32s3.ota.bin",
+        "md5": "79a53f8264a52afc3eb8cab1e3e84820"
       },
       "parts": [
         {
-          "path": "printfarmbutton-esp32s3.factory.bin",
+          "path": "pfb-s3-zero-esp32s3.factory.bin",
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "chipFamily": "ESP32-S3",
+      "ota": {
+        "path": "pfb-s3-mini-esp32s3.ota.bin",
+        "md5": "0b221b18cba026c50fe6ff166b147eec"
+      },
+      "parts": [
+        {
+          "path": "pfb-s3-mini-esp32s3.factory.bin",
           "offset": 0
         }
       ]
@@ -18,12 +31,25 @@
     {
       "chipFamily": "ESP32-C3",
       "ota": {
-        "path": "printfarmbutton-esp32c3.ota.bin",
-        "md5": "e8df7fc7ee5788abcb347a6547cf5e78"
+        "path": "pfb-c3-zero-esp32c3.ota.bin",
+        "md5": "bed2055c175812e6b2fc78927bbc734b"
       },
       "parts": [
         {
-          "path": "printfarmbutton-esp32c3.factory.bin",
+          "path": "pfb-c3-zero-esp32c3.factory.bin",
+          "offset": 0
+        }
+      ]
+    },
+    {
+      "chipFamily": "ESP32-C3",
+      "ota": {
+        "path": "pfb-c3-mini-esp32c3.ota.bin",
+        "md5": "53800bc18352ee9fc16a0fdf69f08ff6"
+      },
+      "parts": [
+        {
+          "path": "pfb-c3-mini-esp32c3.factory.bin",
           "offset": 0
         }
       ]
