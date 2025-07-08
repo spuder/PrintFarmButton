@@ -14,7 +14,7 @@ esphome:
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
   project:
-    name: spuder.printfarmbutton-s3-supermini
+    name: spuder.printfarmbutton-mini
     version: ${version}
   on_boot:
     then:

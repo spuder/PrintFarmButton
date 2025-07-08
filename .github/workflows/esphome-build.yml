@@ -157,11 +157,17 @@ jobs:
             else
               echo "Warning: manifest for $build_name not found, creating basic entry"
               chip_family="ESP32"
+              project_name="spuder.printfarmbutton-zero"
               if [[ "$build_name" == *"c3"* ]]; then
                 chip_family="ESP32-C3"
               fi
-              jq --arg chip "$chip_family" --arg path "$build_name.bin" \
-                '.builds += [{"chipFamily": $chip, "parts": [{"path": $path, "offset": 0}]}]' \
+              if [[ "$build_name" == *"mini"* ]]; then
+                project_name="spuder.printfarmbutton-mini"
+              elif [[ "$build_name" == *"zero"* ]]; then
+                project_name="spuder.printfarmbutton-zero"
+              fi
+              jq --arg chip "$chip_family" --arg project "$project_name" --arg path "$build_name.bin" \
+                '.builds += [{"chipFamily": $chip, "project": $project, "parts": [{"path": $path, "offset": 0}]}]' \
                 firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             fi
           done
