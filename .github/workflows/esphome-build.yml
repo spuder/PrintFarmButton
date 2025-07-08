@@ -122,7 +122,17 @@ jobs:
 
       - name: List artifacts
         run: |
+          echo "Downloaded artifacts structure:"
           ls -la downloaded-artifacts/
+          echo ""
+          echo "Contents of each artifact:"
+          for dir in downloaded-artifacts/*/; do
+            if [ -d "$dir" ]; then
+              echo "=== Contents of $dir ==="
+              ls -la "$dir"
+              echo ""
+            fi
+          done
 
       - name: Prepare output directory
         run: |
@@ -151,8 +161,15 @@ jobs:
             new_install_prompt_erase: true
           }' > firmware/output/manifest.json
 
+          echo "Looking for build artifacts..."
           for build_name in pfb-s3-zero-esp32s3 pfb-s3-mini-esp32s3 pfb-c3-zero-esp32c3 pfb-c3-mini-esp32c3; do
-            if [ -f "downloaded-artifacts/$build_name/manifest.json" ]; then
+            echo "Processing build: $build_name"
+            
+            # Check if the artifact directory exists
+            if [ -d "downloaded-artifacts/$build_name" ]; then
+              echo "Found artifact directory: downloaded-artifacts/$build_name"
+              ls -la "downloaded-artifacts/$build_name"
+              
               # Determine project name based on build name
               project_name=""
               if [[ "$build_name" == *"mini"* ]]; then
@@ -164,33 +181,86 @@ jobs:
                 exit 1
               fi
               
-              # Add project field to each build in the manifest
-              # First check if builds array exists and is not null
-              if jq -e '.builds and (.builds | type == "array") and (.builds | length > 0)' "downloaded-artifacts/$build_name/manifest.json" > /dev/null; then
-                jq --arg project "$project_name" '.builds[] |= . + {"project": $project}' "downloaded-artifacts/$build_name/manifest.json" > temp_manifest.json
-                jq --slurpfile new temp_manifest.json '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
-                rm temp_manifest.json
+              # Check if manifest.json exists
+              if [ -f "downloaded-artifacts/$build_name/manifest.json" ]; then
+                echo "Found ESPHome-generated manifest.json for $build_name"
+                echo "Manifest contents:"
+                cat "downloaded-artifacts/$build_name/manifest.json"
+                
+                # Process the manifest
+                manifest_content=$(cat "downloaded-artifacts/$build_name/manifest.json")
+                
+                # Add project field to the manifest entry
+                updated_manifest=$(echo "$manifest_content" | jq --arg project "$project_name" '. + {"project": $project}')
+                
+                # Add the build entry to the main manifest
+                jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+                
+                echo "Successfully added $build_name to manifest using ESPHome manifest"
               else
-                echo "Warning: Invalid or empty builds array in $build_name/manifest.json, skipping"
+                echo "No ESPHome manifest found for $build_name, creating fallback entry..."
+                
+                # Create fallback manifest entry
+                chip_family="ESP32"
+                if [[ "$build_name" == *"s3"* ]]; then
+                  chip_family="ESP32-S3"
+                elif [[ "$build_name" == *"c3"* ]]; then
+                  chip_family="ESP32-C3"
+                fi
+                
+                # Look for binary files
+                factory_bin=""
+                ota_bin=""
+                
+                # Try different naming patterns
+                for pattern in "${build_name}.factory.bin" "*.factory.bin"; do
+                  if [ -f "downloaded-artifacts/$build_name"/$pattern ]; then
+                    factory_bin=$(basename "downloaded-artifacts/$build_name"/$pattern)
+                    break
+                  fi
+                done
+                
+                for pattern in "${build_name}.ota.bin" "*.ota.bin"; do
+                  if [ -f "downloaded-artifacts/$build_name"/$pattern ]; then
+                    ota_bin=$(basename "downloaded-artifacts/$build_name"/$pattern)
+                    break
+                  fi
+                done
+                
+                # Create manifest entry
+                if [ -n "$factory_bin" ] && [ -n "$ota_bin" ]; then
+                  echo "Creating full manifest entry with factory and OTA binaries"
+                  jq --arg chip "$chip_family" --arg project "$project_name" --arg factory_path "$factory_bin" --arg ota_path "$ota_bin" \
+                    '.builds += [{
+                      "chipFamily": $chip, 
+                      "project": $project, 
+                      "parts": [{"path": $factory_path, "offset": 0}],
+                      "ota": {"path": $ota_path}
+                    }]' \
+                    firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+                elif [ -n "$factory_bin" ]; then
+                  echo "Creating manifest entry with factory binary only"
+                  jq --arg chip "$chip_family" --arg project "$project_name" --arg factory_path "$factory_bin" \
+                    '.builds += [{
+                      "chipFamily": $chip, 
+                      "project": $project, 
+                      "parts": [{"path": $factory_path, "offset": 0}]
+                    }]' \
+                    firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+                else
+                  echo "Error: No binary files found for $build_name"
+                  echo "Available files:"
+                  ls -la "downloaded-artifacts/$build_name/"
+                  exit 1
+                fi
+                
+                echo "Successfully created fallback manifest entry for $build_name"
               fi
             else
-              echo "Warning: manifest for $build_name not found, creating basic entry"
-              chip_family="ESP32"
-              project_name=""
-              if [[ "$build_name" == *"c3"* ]]; then
-                chip_family="ESP32-C3"
-              fi
-              if [[ "$build_name" == *"mini"* ]]; then
-                project_name="spuder.printfarmbutton-mini"
-              elif [[ "$build_name" == *"zero"* ]]; then
-                project_name="spuder.printfarmbutton-zero"
-              else
-                echo "Error: Cannot determine project name for build: $build_name"
-                exit 1
-              fi
-              jq --arg chip "$chip_family" --arg project "$project_name" --arg path "$build_name.bin" \
-                '.builds += [{"chipFamily": $chip, "project": $project, "parts": [{"path": $path, "offset": 0}]}]' \
-                firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+              echo "Error: Artifact directory not found: downloaded-artifacts/$build_name"
+              echo "Available artifacts:"
+              ls -la downloaded-artifacts/
+              exit 1
             fi
           done
 
