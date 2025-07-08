@@ -11,4 +11,4 @@ packages:
   common: !include common.yaml
 
 esphome:
-  name: spuder.printfarmbutton-s3-zero
+  name: printfarmbutton-s3-zero
