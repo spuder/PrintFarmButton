@@ -6,9 +6,9 @@ binary_sensor:
   id: confirm_ready_gpio
   internal: true
   pin:
-    number: 2
-    mode: INPUT_PULLUP
-    inverted: true
+    number: ${button_gpio}
+    mode: INPUT_PULLDOWN
+    inverted: false
   filters:
   - delayed_on: 100ms
   - delayed_off: 100ms

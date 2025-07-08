@@ -1,0 +1,35 @@
+{
+  "name": "PrintFarmButton Zero",
+  "version": "1.2.15",
+  "builds": [
+    {
+      "chipFamily": "ESP32-S3",
+      "ota": {
+        "path": "printfarmbutton-zero-esp32s3.ota.bin",
+        "md5": "ead9062a7681e9bc3b666023a0960427"
+      },
+      "parts": [
+        {
+          "path": "printfarmbutton-zero-esp32s3.factory.bin",
+          "offset": 0
+        }
+      ],
+      "project": "spuder.printfarmbutton"
+    },
+    {
+      "chipFamily": "ESP32-C3",
+      "ota": {
+        "path": "printfarmbutton-zero-esp32c3.ota.bin",
+        "md5": "3386b7bb03d78099f80b347f2a7b67a5"
+      },
+      "parts": [
+        {
+          "path": "printfarmbutton-zero-esp32c3.factory.bin",
+          "offset": 0
+        }
+      ],
+      "project": "spuder.printfarmbutton"
+    }
+  ],
+  "new_install_prompt_erase": true
+}

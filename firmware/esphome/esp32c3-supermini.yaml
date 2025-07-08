@@ -1,0 +1,11 @@
+substitutions:
+  button_gpio: "4"
+  led_gpio: "3"
+  manifest_file: "manifest-supermini.json"
+
+# https://www.espboards.dev/esp32/esp32-c3-super-mini/
+esp32:
+  board: esp32-c3-devkitm-1
+
+packages:
+  common: !include common.yaml

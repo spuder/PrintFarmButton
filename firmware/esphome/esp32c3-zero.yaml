@@ -1,0 +1,11 @@
+substitutions:
+  button_gpio: "0"
+  led_gpio: "1"
+  manifest_file: "manifest-zero.json"
+
+# https://www.espboards.dev/esp32/esp32-c3-zero/
+esp32:
+  board: esp32-c3-devkitm-1
+
+packages:
+  common: !include common.yaml

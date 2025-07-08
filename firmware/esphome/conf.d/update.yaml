@@ -27,7 +27,7 @@ update:
 - platform: http_request
   id: firmware_update
   name: Firmware Update Available
-  source: https://raw.githubusercontent.com/spuder/PrintFarmButton/refs/heads/main/firmware/output/manifest.json
+  source: https://raw.githubusercontent.com/spuder/PrintFarmButton/refs/heads/main/firmware/output/${manifest_file}
   update_interval: 1h #Check (not install) updates every 1 hours
   state_topic:
   web_server:

@@ -3,7 +3,7 @@ light:
   name: "PrintFarmButton RGB"
   id: printfarmbutton_rgb
   chipset: WS2812
-  pin: 1
+  pin: ${led_gpio}
   num_leds: 13
   rgb_order: GRB
   # rmt_channel: 0

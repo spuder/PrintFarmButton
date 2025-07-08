@@ -52,31 +52,10 @@ Once you've joined it to your wifi, navigate to `http://printfarmbutton-xxxxxx.l
    - The other terminal connects to GND
 3. Power the ESP32-S3-Zero via USB or an external 5V power supply
 
-### Pinout Reference
-| Component      | ESP32-S3-Zero Pin |
-|----------------|-------------------|
-| RGB LED data   | GPIO1             |
-| RGB LED power  | 5V                |
-| RGB LED ground | GND               |
-| Button         | GPIO2 and GND     |
-
 ### Wiring Diagram
 
-```
-                ESP32-S3-Zero
-             +----------------+
-        |----+ 5v             |
-        |----+ GND            |
-        |    |                |
-RGB LED -----+ GPIO1          |
-             |                |
-Button  -----+ GPIO2          |
-    |        |                |
-    |        |                |
-    +--------+ GND            |
-             |                |
-             +----------------+
-```
+
+![Schematic](images/schematic.png)
 
 ## Firmware
 
