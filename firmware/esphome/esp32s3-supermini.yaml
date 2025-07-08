@@ -1,6 +1,6 @@
 substitutions:
   led_gpio: "12"
-  button_gpio: "8"
+  button_gpio: "13"
   manifest_file: "manifest-supermini.json"
 
 # https://www.espboards.dev/esp32/esp32-s3-super-mini/
