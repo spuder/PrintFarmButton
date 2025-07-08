@@ -15,19 +15,16 @@ jobs:
   build:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1  # Force sequential builds to avoid directory conflicts
       matrix:
         include:
           - target: esp32s3-zero
-            build_name: printfarmbutton
             yaml_file: esp32s3-zero.yaml
           - target: esp32s3-supermini
-            build_name: printfarmbutton
             yaml_file: esp32s3-supermini.yaml
           - target: esp32c3-zero
-            build_name: printfarmbutton
             yaml_file: esp32c3-zero.yaml
           - target: esp32c3-supermini
-            build_name: printfarmbutton
             yaml_file: esp32c3-supermini.yaml
     steps:
       - name: Checkout repository
@@ -64,26 +61,58 @@ jobs:
       - name: List build output
         run: |
           ls -la
-          ls ${{ matrix.build_name }}/* || true
+          echo "Looking for build directories..."
+          for dir in printfarmbutton*; do
+            if [ -d "$dir" ]; then
+              echo "Found build directory: $dir"
+              ls -la "$dir/" || true
+            fi
+          done
+
+      - name: Rename build directory to avoid conflicts
+        run: |
+          # Find the actual build directory
+          BUILD_DIR=""
+          for dir in printfarmbutton*; do
+            if [ -d "$dir" ]; then
+              BUILD_DIR="$dir"
+              break
+            fi
+          done
+          
+          if [ -z "$BUILD_DIR" ]; then
+            echo "Error: No build directory found"
+            exit 1
+          fi
+          
+          # Rename to target-specific directory
+          NEW_DIR="${{ matrix.target }}-build"
+          echo "Renaming $BUILD_DIR to $NEW_DIR"
+          mv "$BUILD_DIR" "$NEW_DIR"
+          ls -la "$NEW_DIR"
 
       - name: Generate md5 checksum
         run: |
-          ls -la ${{ matrix.build_name }}
-          for file in ${{ matrix.build_name }}/*.bin; do
-            md5sum "$file" | awk '{print $1}' > "${file}.md5"
-            md5_length=$(wc -c < "${file}.md5")
-            if [ "$md5_length" -ne 33 ]; then
-              echo "MD5 generation failed for $file (length: $md5_length)"
-              exit 1
+          BUILD_DIR="${{ matrix.target }}-build"
+          echo "Using build directory: $BUILD_DIR"
+          ls -la "$BUILD_DIR"
+          for file in "$BUILD_DIR"/*.bin; do
+            if [ -f "$file" ]; then
+              md5sum "$file" | awk '{print $1}' > "${file}.md5"
+              md5_length=$(wc -c < "${file}.md5")
+              if [ "$md5_length" -ne 33 ]; then
+                echo "MD5 generation failed for $file (length: $md5_length)"
+                exit 1
+              fi
             fi
           done
-          ls -la ${{ matrix.build_name }}
+          ls -la "$BUILD_DIR"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.target }}
-          path: ${{ matrix.build_name }}/**/*
+          path: ${{ matrix.target }}-build/**/*
           retention-days: 5
           if-no-files-found: error
 
