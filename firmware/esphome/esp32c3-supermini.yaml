@@ -1,7 +1,6 @@
 substitutions:
   led_gpio: "3"
   button_gpio: "0"
-  firmware_name: "esp32c3-supermini"
 
 # https://www.espboards.dev/esp32/esp32-c3-super-mini/
 esp32:
@@ -11,7 +10,7 @@ packages:
   common: !include common.yaml
 
 esphome:
-  name: pfb-${firmware_name}
+  name: pfb-c3-mini
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
   project:

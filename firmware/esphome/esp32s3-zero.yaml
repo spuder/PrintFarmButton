@@ -1,7 +1,6 @@
 substitutions:
   led_gpio: "1"
   button_gpio: "2"
-  firmware_name: "esp32s3-zero"
 
 # https://www.espboards.dev/esp32/esp32-s3-zero/
 esp32:
@@ -11,7 +10,7 @@ packages:
   common: !include common.yaml
 
 esphome:
-  name: pfb-${firmware_name}
+  name: pfb-s3-zero
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
   project:
