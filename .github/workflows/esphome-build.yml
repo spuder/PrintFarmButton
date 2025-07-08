@@ -74,12 +74,12 @@ jobs:
       - name: List build output
         run: |
           ls -la
-          ls printfarmbutton-${{ matrix.target }}/* || true
+          ls pfb-${{ matrix.target }}/* || true
 
       - name: Generate md5 checksum
         run: |
-          ls -la printfarmbutton-${{ matrix.target }}
-          for file in printfarmbutton-${{ matrix.target }}/*.bin; do
+          ls -la pfb-${{ matrix.target }}
+          for file in pfb-${{ matrix.target }}/*.bin; do
             md5sum "$file" | awk '{print $1}' > "${file}.md5"
             md5_length=$(wc -c < "${file}.md5")
             if [ "$md5_length" -ne 33 ]; then
@@ -87,13 +87,13 @@ jobs:
               exit 1
             fi
           done
-          ls -la printfarmbutton-${{ matrix.target }}
+          ls -la pfb-${{ matrix.target }}
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: printfarmbutton-${{ matrix.target }}
-          path: printfarmbutton-${{ matrix.target }}/**/*
+          name: pfb-${{ matrix.target }}
+          path: pfb-${{ matrix.target }}/**/*
           retention-days: 5
           if-no-files-found: error
 
@@ -120,8 +120,8 @@ jobs:
         run: |
           mkdir -p firmware/output
           for target in esp32s3-zero esp32s3-supermini esp32c3-zero esp32c3-supermini; do
-            cp downloaded-artifacts/printfarmbutton-$target/*.bin firmware/output/ || true
-            cp downloaded-artifacts/printfarmbutton-$target/*.md5 firmware/output/ || true
+            cp downloaded-artifacts/pfb-$target/*.bin firmware/output/ || true
+            cp downloaded-artifacts/pfb-$target/*.md5 firmware/output/ || true
           done
 
       - name: Get version from git tag or branch
@@ -144,15 +144,15 @@ jobs:
           }' > firmware/output/manifest.json
 
           for target in esp32s3-zero esp32s3-supermini esp32c3-zero esp32c3-supermini; do
-            if [ -f "downloaded-artifacts/printfarmbutton-$target/manifest.json" ]; then
-              jq --slurpfile new "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+            if [ -f "downloaded-artifacts/pfb-$target/manifest.json" ]; then
+              jq --slurpfile new "downloaded-artifacts/pfb-$target/manifest.json" '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             else
               echo "Warning: manifest for $target not found, creating basic entry"
               chip_family="ESP32"
               if [[ "$target" == esp32c3-* ]]; then
                 chip_family="ESP32-C3"
               fi
-              jq --arg chip "$chip_family" --arg path "printfarmbutton-$target.bin" \
+              jq --arg chip "$chip_family" --arg path "pfb-$target.bin" \
                 '.builds += [{"chipFamily": $chip, "parts": [{"path": $path, "offset": 0}]}]' \
                 firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             fi

@@ -14,7 +14,7 @@ packages:
   common: !include common.yaml
 
 esphome:
-  name: printfarmbutton
+  name: pfb-${firmware_name}
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
   project:
