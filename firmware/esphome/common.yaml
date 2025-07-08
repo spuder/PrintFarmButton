@@ -1,3 +1,17 @@
+esphome:
+  name: printfarmbutton
+  friendly_name: PrintFarmButton
+  name_add_mac_suffix: true
+  project:
+    name: spuder.printfarmbutton
+    version: ${version}
+  on_boot:
+    then:
+    - light.turn_on:
+        id: printfarmbutton_rgb
+        effect: Rainbow
+    - delay: 3s
+
 packages:
   led: !include conf.d/led.yaml
   web_server: !include conf.d/web_server.yaml

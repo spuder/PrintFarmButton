@@ -9,17 +9,3 @@ esp32:
 
 packages:
   common: !include common.yaml
-
-esphome:
-  name: pfb-s3-mini
-  friendly_name: PrintFarmButton
-  name_add_mac_suffix: true
-  project:
-    name: spuder.printfarmbutton
-    version: ${version}
-  on_boot:
-    then:
-    - light.turn_on:
-        id: printfarmbutton_rgb
-        effect: Rainbow
-    - delay: 3s
