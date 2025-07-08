@@ -18,13 +18,13 @@ jobs:
       matrix:
         include:
           - target: esp32s3-zero
-            build_name: pfb-s3-zero
+            build_name: pfb-s3-zero-esp32s3
           - target: esp32s3-supermini
-            build_name: pfb-s3-mini
+            build_name: pfb-s3-mini-esp32s3
           - target: esp32c3-zero
-            build_name: pfb-c3-zero
+            build_name: pfb-c3-zero-esp32c3
           - target: esp32c3-supermini
-            build_name: pfb-c3-mini
+            build_name: pfb-c3-mini-esp32c3
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -127,7 +127,7 @@ jobs:
       - name: Prepare output directory
         run: |
           mkdir -p firmware/output
-          for build_name in pfb-s3-zero pfb-s3-mini pfb-c3-zero pfb-c3-mini; do
+          for build_name in pfb-s3-zero-esp32s3 pfb-s3-mini-esp32s3 pfb-c3-zero-esp32c3 pfb-c3-mini-esp32c3; do
             cp downloaded-artifacts/$build_name/*.bin firmware/output/ || true
             cp downloaded-artifacts/$build_name/*.md5 firmware/output/ || true
           done
@@ -151,7 +151,7 @@ jobs:
             new_install_prompt_erase: true
           }' > firmware/output/manifest.json
 
-          for build_name in pfb-s3-zero pfb-s3-mini pfb-c3-zero pfb-c3-mini; do
+          for build_name in pfb-s3-zero-esp32s3 pfb-s3-mini-esp32s3 pfb-c3-zero-esp32c3 pfb-c3-mini-esp32c3; do
             if [ -f "downloaded-artifacts/$build_name/manifest.json" ]; then
               jq --slurpfile new "downloaded-artifacts/$build_name/manifest.json" '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             else
