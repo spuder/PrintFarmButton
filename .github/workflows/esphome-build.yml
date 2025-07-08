@@ -18,13 +18,17 @@ jobs:
       matrix:
         include:
           - target: esp32s3-zero
-            build_name: pfb-s3-zero-esp32s3
+            build_name: printfarmbutton
+            yaml_file: esp32s3-zero.yaml
           - target: esp32s3-supermini
-            build_name: pfb-s3-mini-esp32s3
+            build_name: printfarmbutton
+            yaml_file: esp32s3-supermini.yaml
           - target: esp32c3-zero
-            build_name: pfb-c3-zero-esp32c3
+            build_name: printfarmbutton
+            yaml_file: esp32c3-zero.yaml
           - target: esp32c3-supermini
-            build_name: pfb-c3-mini-esp32c3
+            build_name: printfarmbutton
+            yaml_file: esp32c3-supermini.yaml
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -51,33 +55,11 @@ jobs:
           yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
           cat firmware/esphome/conf.d/version.yaml
 
-      - name: Build ESP32-S3 Zero firmware
+      - name: Build firmware
         uses: esphome/build-action@v6
         with:
-          yaml-file: firmware/esphome/esp32s3-zero.yaml
+          yaml-file: firmware/esphome/${{ matrix.yaml_file }}
           complete-manifest: false
-        if: matrix.target == 'esp32s3-zero'
-
-      - name: Build ESP32-S3 SuperMini firmware
-        uses: esphome/build-action@v6
-        with:
-          yaml-file: firmware/esphome/esp32s3-supermini.yaml
-          complete-manifest: false
-        if: matrix.target == 'esp32s3-supermini'
-
-      - name: Build ESP32-C3 Zero firmware
-        uses: esphome/build-action@v6
-        with:
-          yaml-file: firmware/esphome/esp32c3-zero.yaml
-          complete-manifest: false
-        if: matrix.target == 'esp32c3-zero'
-
-      - name: Build ESP32-C3 SuperMini firmware
-        uses: esphome/build-action@v6
-        with:
-          yaml-file: firmware/esphome/esp32c3-supermini.yaml
-          complete-manifest: false
-        if: matrix.target == 'esp32c3-supermini'
 
       - name: List build output
         run: |
@@ -100,7 +82,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.build_name }}
+          name: ${{ matrix.target }}
           path: ${{ matrix.build_name }}/**/*
           retention-days: 5
           if-no-files-found: error
@@ -137,9 +119,26 @@ jobs:
       - name: Prepare output directory
         run: |
           mkdir -p firmware/output
-          for build_name in pfb-s3-mini-esp32s3 pfb-s3-zero-esp32s3 pfb-c3-mini-esp32c3 pfb-c3-zero-esp32c3; do
-            cp downloaded-artifacts/$build_name/*.bin firmware/output/ || true
-            cp downloaded-artifacts/$build_name/*.md5 firmware/output/ || true
+          for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero; do
+            if [ -d "downloaded-artifacts/$target" ]; then
+              # Rename files to include target in the name to avoid conflicts
+              for bin_file in downloaded-artifacts/$target/*.bin; do
+                if [ -f "$bin_file" ]; then
+                  filename=$(basename "$bin_file")
+                  # Replace printfarmbutton with printfarmbutton-$target
+                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$target/")
+                  cp "$bin_file" "firmware/output/$new_filename"
+                fi
+              done
+              for md5_file in downloaded-artifacts/$target/*.md5; do
+                if [ -f "$md5_file" ]; then
+                  filename=$(basename "$md5_file")
+                  # Replace printfarmbutton with printfarmbutton-$target
+                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$target/")
+                  cp "$md5_file" "firmware/output/$new_filename"
+                fi
+              done
+            fi
           done
 
       - name: Get version from git tag or branch
@@ -178,74 +177,70 @@ jobs:
           }' > firmware/output/manifest-zero.json
 
           echo "Looking for build artifacts..."
-          for build_name in pfb-s3-mini-esp32s3 pfb-s3-zero-esp32s3 pfb-c3-mini-esp32c3 pfb-c3-zero-esp32c3; do
-            echo "Processing build: $build_name"
+          for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero; do
+            echo "Processing build: $target"
             
             # Check if the artifact directory exists
-            if [ -d "downloaded-artifacts/$build_name" ]; then
-              echo "Found artifact directory: downloaded-artifacts/$build_name"
-              ls -la "downloaded-artifacts/$build_name"
+            if [ -d "downloaded-artifacts/$target" ]; then
+              echo "Found artifact directory: downloaded-artifacts/$target"
+              ls -la "downloaded-artifacts/$target"
               
-              # Determine project name and target manifest based on build name
-              project_name=""
+              # Determine project name and target manifest based on target name
+              project_name="spuder.printfarmbutton"
               target_manifest=""
-              if [[ "$build_name" == *"mini"* ]]; then
-                project_name="spuder.printfarmbutton-mini"
+              if [[ "$target" == *"supermini"* ]]; then
                 target_manifest="firmware/output/manifest-supermini.json"
-              elif [[ "$build_name" == *"zero"* ]]; then
-                project_name="spuder.printfarmbutton-zero"
+              elif [[ "$target" == *"zero"* ]]; then
                 target_manifest="firmware/output/manifest-zero.json"
               else
-                echo "Error: Cannot determine project name for build: $build_name"
+                echo "Error: Cannot determine target manifest for: $target"
                 exit 1
               fi
               
               # Check if manifest.json exists
-              if [ -f "downloaded-artifacts/$build_name/manifest.json" ]; then
-                echo "Found ESPHome-generated manifest.json for $build_name"
+              if [ -f "downloaded-artifacts/$target/manifest.json" ]; then
+                echo "Found ESPHome-generated manifest.json for $target"
                 echo "Manifest contents:"
-                cat "downloaded-artifacts/$build_name/manifest.json"
+                cat "downloaded-artifacts/$target/manifest.json"
                 
-                # Process the manifest
-                manifest_content=$(cat "downloaded-artifacts/$build_name/manifest.json")
+                # Process the manifest and update file paths to use renamed files
+                manifest_content=$(cat "downloaded-artifacts/$target/manifest.json")
                 
-                # Add project field to the manifest entry
-                updated_manifest=$(echo "$manifest_content" | jq --arg project "$project_name" '. + {"project": $project}')
+                # Update file paths in the manifest to use renamed files
+                updated_manifest=$(echo "$manifest_content" | jq --arg target "$target" --arg project "$project_name" '
+                  . + {"project": $project} |
+                  if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton"; "printfarmbutton-" + $target))] else . end |
+                  if .ota then .ota.path = (.ota.path | gsub("printfarmbutton"; "printfarmbutton-" + $target)) else . end
+                ')
                 
                 # Add the build entry to both the main manifest and target manifest
                 jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
                 jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
                 
-                echo "Successfully added $build_name to manifests using ESPHome manifest"
+                echo "Successfully added $target to manifests using ESPHome manifest"
               else
-                echo "No ESPHome manifest found for $build_name, creating fallback entry..."
+                echo "No ESPHome manifest found for $target, creating fallback entry..."
                 
                 # Create fallback manifest entry
                 chip_family="ESP32"
-                if [[ "$build_name" == *"s3"* ]]; then
+                if [[ "$target" == *"s3"* ]]; then
                   chip_family="ESP32-S3"
-                elif [[ "$build_name" == *"c3"* ]]; then
+                elif [[ "$target" == *"c3"* ]]; then
                   chip_family="ESP32-C3"
                 fi
                 
-                # Look for binary files
+                # Look for binary files (use renamed files in output directory)
                 factory_bin=""
                 ota_bin=""
                 
-                # Try different naming patterns
-                for pattern in "${build_name}.factory.bin" "*.factory.bin"; do
-                  if [ -f "downloaded-artifacts/$build_name"/$pattern ]; then
-                    factory_bin=$(basename "downloaded-artifacts/$build_name"/$pattern)
-                    break
-                  fi
-                done
+                # Check for renamed files in output directory
+                if [ -f "firmware/output/printfarmbutton-$target.factory.bin" ]; then
+                  factory_bin="printfarmbutton-$target.factory.bin"
+                fi
                 
-                for pattern in "${build_name}.ota.bin" "*.ota.bin"; do
-                  if [ -f "downloaded-artifacts/$build_name"/$pattern ]; then
-                    ota_bin=$(basename "downloaded-artifacts/$build_name"/$pattern)
-                    break
-                  fi
-                done
+                if [ -f "firmware/output/printfarmbutton-$target.ota.bin" ]; then
+                  ota_bin="printfarmbutton-$target.ota.bin"
+                fi
                 
                 # Create manifest entry
                 if [ -n "$factory_bin" ] && [ -n "$ota_bin" ]; then
@@ -264,9 +259,9 @@ jobs:
                     "parts": [{"path": $factory_path, "offset": 0}]
                   }')
                 else
-                  echo "Error: No binary files found for $build_name"
+                  echo "Error: No binary files found for $target"
                   echo "Available files:"
-                  ls -la "downloaded-artifacts/$build_name/"
+                  ls -la "downloaded-artifacts/$target/"
                   exit 1
                 fi
                 
@@ -274,10 +269,10 @@ jobs:
                 jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
                 jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
                 
-                echo "Successfully created fallback manifest entry for $build_name"
+                echo "Successfully created fallback manifest entry for $target"
               fi
             else
-              echo "Error: Artifact directory not found: downloaded-artifacts/$build_name"
+              echo "Error: Artifact directory not found: downloaded-artifacts/$target"
               echo "Available artifacts:"
               ls -la downloaded-artifacts/
               exit 1
