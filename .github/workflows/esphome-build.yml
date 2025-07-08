@@ -12,16 +12,11 @@ permissions:
   checks: write
 
 jobs:
-  build:
+  build-esp32c3:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1  # Force sequential builds to avoid directory conflicts
       matrix:
         include:
-          - target: esp32s3-zero
-            yaml_file: esp32s3-zero.yaml
-          - target: esp32s3-supermini
-            yaml_file: esp32s3-supermini.yaml
           - target: esp32c3-zero
             yaml_file: esp32c3-zero.yaml
           - target: esp32c3-supermini
@@ -116,8 +111,107 @@ jobs:
           retention-days: 5
           if-no-files-found: error
 
+  build-esp32s3:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - target: esp32s3-zero
+            yaml_file: esp32s3-zero.yaml
+          - target: esp32s3-supermini
+            yaml_file: esp32s3-supermini.yaml
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Create empty secrets file
+        run: |
+          touch firmware/esphome/secrets.yaml || true
+      
+      - name: Setup yq
+        uses: vegardit/gha-setup-yq@v1
+
+      - name: Set git sha
+        run: |
+          SUMMARY=$(git log -1 --pretty=%B)
+          SUMMARY="${SUMMARY//'%'/'%25'}"
+          SUMMARY="${SUMMARY//$'\n'/'%0A'}"
+          SUMMARY="${SUMMARY//$'\r'/'%0D'}"
+          echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
+
+      - name: Modify version.yaml
+        run: |
+          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
+          cat firmware/esphome/conf.d/version.yaml
+
+      - name: Build firmware
+        uses: esphome/build-action@v6
+        with:
+          yaml-file: firmware/esphome/${{ matrix.yaml_file }}
+          complete-manifest: false
+
+      - name: List build output
+        run: |
+          ls -la
+          echo "Looking for build directories..."
+          for dir in printfarmbutton*; do
+            if [ -d "$dir" ]; then
+              echo "Found build directory: $dir"
+              ls -la "$dir/" || true
+            fi
+          done
+
+      - name: Rename build directory to avoid conflicts
+        run: |
+          # Find the actual build directory
+          BUILD_DIR=""
+          for dir in printfarmbutton*; do
+            if [ -d "$dir" ]; then
+              BUILD_DIR="$dir"
+              break
+            fi
+          done
+          
+          if [ -z "$BUILD_DIR" ]; then
+            echo "Error: No build directory found"
+            exit 1
+          fi
+          
+          # Rename to target-specific directory
+          NEW_DIR="${{ matrix.target }}-build"
+          echo "Renaming $BUILD_DIR to $NEW_DIR"
+          mv "$BUILD_DIR" "$NEW_DIR"
+          ls -la "$NEW_DIR"
+
+      - name: Generate md5 checksum
+        run: |
+          BUILD_DIR="${{ matrix.target }}-build"
+          echo "Using build directory: $BUILD_DIR"
+          ls -la "$BUILD_DIR"
+          for file in "$BUILD_DIR"/*.bin; do
+            if [ -f "$file" ]; then
+              md5sum "$file" | awk '{print $1}' > "${file}.md5"
+              md5_length=$(wc -c < "${file}.md5")
+              if [ "$md5_length" -ne 33 ]; then
+                echo "MD5 generation failed for $file (length: $md5_length)"
+                exit 1
+              fi
+            fi
+          done
+          ls -la "$BUILD_DIR"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ matrix.target }}-build/**/*
+          retention-days: 5
+          if-no-files-found: error
+
   combine-and-deploy:
-    needs: build
+    needs: [build-esp32c3, build-esp32s3]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
@@ -169,16 +263,16 @@ jobs:
               for bin_file in downloaded-artifacts/$target/*.bin; do
                 if [ -f "$bin_file" ]; then
                   filename=$(basename "$bin_file")
-                  # Replace printfarmbutton with printfarmbutton-<type>-<family>
-                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$board_type-$chip_family/")
+                  # Replace the entire printfarmbutton-<chip> pattern with printfarmbutton-<type>-<chip>
+                  new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
                   cp "$bin_file" "firmware/output/$new_filename"
                 fi
               done
               for md5_file in downloaded-artifacts/$target/*.md5; do
                 if [ -f "$md5_file" ]; then
                   filename=$(basename "$md5_file")
-                  # Replace printfarmbutton with printfarmbutton-<type>-<family>
-                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$board_type-$chip_family/")
+                  # Replace the entire printfarmbutton-<chip> pattern with printfarmbutton-<type>-<chip>
+                  new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
                   cp "$md5_file" "firmware/output/$new_filename"
                 fi
               done
@@ -256,8 +350,8 @@ jobs:
                 # Update file paths in the manifest to use renamed files
                 updated_manifest=$(echo "$manifest_content" | jq --arg board_type "$board_type" --arg chip_family "$chip_family" --arg project "$project_name" '
                   . + {"project": $project} |
-                  if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton"; "printfarmbutton-" + $board_type + "-" + $chip_family))] else . end |
-                  if .ota then .ota.path = (.ota.path | gsub("printfarmbutton"; "printfarmbutton-" + $board_type + "-" + $chip_family)) else . end
+                  if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton-" + $chip_family; "printfarmbutton-" + $board_type + "-" + $chip_family) | gsub("^printfarmbutton\\."; "printfarmbutton-" + $board_type + "-" + $chip_family + "."))] else . end |
+                  if .ota then .ota.path = (.ota.path | gsub("printfarmbutton-" + $chip_family; "printfarmbutton-" + $board_type + "-" + $chip_family) | gsub("^printfarmbutton\\."; "printfarmbutton-" + $board_type + "-" + $chip_family + ".")) else . end
                 ')
                 
                 # Add the build entry to the target manifest only
