@@ -4,6 +4,7 @@
 substitutions:
   led_gpio: "0"
   button_gpio: "1"
+  manifest_file: "manifest-zero.json"
 
 # https://www.espboards.dev/esp32/esp32-c3-zero/
 esp32:
