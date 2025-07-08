@@ -14,10 +14,10 @@ packages:
   common: !include common.yaml
 
 esphome:
-  name: printfarmbutton-c3-zero
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
   project:
+    name: spuder.printfarmbutton-c3-zero
     version: ${version}
   on_boot:
     then:
