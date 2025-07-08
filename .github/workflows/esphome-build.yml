@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [esp32s3, esp32c3-supermini]
+        target: [s3-zero, s3-supermini, c3-zero, c3-supermini]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -43,19 +43,33 @@ jobs:
           yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
           cat firmware/esphome/conf.d/version.yaml
 
-      - name: Build ESP32-S3 firmware
+      - name: Build ESP32-S3 Zero firmware
         uses: esphome/build-action@v6
         with:
-          yaml-file: firmware/esphome/esp32s3.yaml
+          yaml-file: firmware/esphome/esp32s3-zero.yaml
           complete-manifest: false
-        if: matrix.target == 'esp32s3'
+        if: matrix.target == 's3-zero'
+
+      - name: Build ESP32-S3 SuperMini firmware
+        uses: esphome/build-action@v6
+        with:
+          yaml-file: firmware/esphome/esp32s3-supermini.yaml
+          complete-manifest: false
+        if: matrix.target == 's3-supermini'
+
+      - name: Build ESP32-C3 Zero firmware
+        uses: esphome/build-action@v6
+        with:
+          yaml-file: firmware/esphome/esp32c3-zero.yaml
+          complete-manifest: false
+        if: matrix.target == 'c3-zero'
 
       - name: Build ESP32-C3 SuperMini firmware
         uses: esphome/build-action@v6
         with:
           yaml-file: firmware/esphome/esp32c3-supermini.yaml
           complete-manifest: false
-        if: matrix.target == 'esp32c3-supermini'
+        if: matrix.target == 'c3-supermini'
       
       - name: List build output
         run: |
@@ -106,10 +120,14 @@ jobs:
       - name: Prepare output directory
         run: |
           mkdir -p firmware/output
-          cp downloaded-artifacts/printfarmbutton-esp32s3/*.bin firmware/output/ || true
-          cp downloaded-artifacts/printfarmbutton-esp32s3/*.md5 firmware/output/ || true
-          cp downloaded-artifacts/printfarmbutton-esp32c3-supermini/*.bin firmware/output/ || true
-          cp downloaded-artifacts/printfarmbutton-esp32c3-supermini/*.md5 firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-s3-zero/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-s3-zero/*.md5 firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-s3-supermini/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-s3-supermini/*.md5 firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-c3-zero/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-c3-zero/*.md5 firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-c3-supermini/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-c3-supermini/*.md5 firmware/output/ || true
 
       - name: Get version from git tag or branch
         id: get_version
@@ -130,13 +148,13 @@ jobs:
             new_install_prompt_erase: true
           }' > firmware/output/manifest.json
 
-          for target in esp32s3 esp32c3-supermini; do
+          for target in s3-zero s3-supermini c3-zero c3-supermini; do
             if [ -f "downloaded-artifacts/printfarmbutton-$target/manifest.json" ]; then
               jq --slurpfile new "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             else
               echo "Warning: manifest for $target not found, creating basic entry"
               chip_family="ESP32"
-              if [ "$target" = "esp32c3-supermini" ]; then
+              if [[ "$target" == c3-* ]]; then
                 chip_family="ESP32-C3"
               fi
               jq --arg chip "$chip_family" --arg path "printfarmbutton-$target.bin" \

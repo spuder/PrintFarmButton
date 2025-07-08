@@ -2,8 +2,9 @@
 # It requires manually compiling as esphome web installer doesn't provide a way to select the board.
 
 substitutions:
-  button_gpio: "6"
-  led_gpio: "10"
+  led_gpio: "0"
+  button_gpio: "1"
+  firmware_name: "esp32c3-zero"
 
 # https://www.espboards.dev/esp32/esp32-c3-zero/
 esp32:

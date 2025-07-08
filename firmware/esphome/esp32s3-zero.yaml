@@ -1,7 +1,9 @@
 substitutions:
-  button_gpio: "2"
   led_gpio: "1"
+  button_gpio: "2"
+  firmware_name: "esp32s3-zero"
 
+# https://www.espboards.dev/esp32/esp32-s3-zero/
 esp32:
   board: esp32-s3-devkitc-1
 
