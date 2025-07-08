@@ -1,3 +1,7 @@
+substitutions:
+  button_gpio: "2"
+  led_gpio: "1"
+
 esp32:
   board: esp32-s3-devkitc-1
 

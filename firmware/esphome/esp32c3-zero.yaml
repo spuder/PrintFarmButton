@@ -1,0 +1,13 @@
+# WARNING: The c3-zero has different GPIOs for button and LED than the c3-supermini.
+# It requires manually compiling as esphome web installer doesn't provide a way to select the board.
+
+substitutions:
+  button_gpio: "6"
+  led_gpio: "10"
+
+# https://www.espboards.dev/esp32/esp32-c3-zero/
+esp32:
+  board: esp32-c3-devkitm-1
+
+packages:
+  common: !include common.yaml

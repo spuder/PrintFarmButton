@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        target: [esp32s3, esp32c3]
+        target: [esp32s3, esp32c3-supermini]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -50,12 +50,12 @@ jobs:
           complete-manifest: false
         if: matrix.target == 'esp32s3'
 
-      - name: Build ESP32-C3 firmware
+      - name: Build ESP32-C3 SuperMini firmware
         uses: esphome/build-action@v6
         with:
-          yaml-file: firmware/esphome/esp32c3.yaml
+          yaml-file: firmware/esphome/esp32c3-supermini.yaml
           complete-manifest: false
-        if: matrix.target == 'esp32c3'
+        if: matrix.target == 'esp32c3-supermini'
       
       - name: List build output
         run: |
@@ -108,8 +108,8 @@ jobs:
           mkdir -p firmware/output
           cp downloaded-artifacts/printfarmbutton-esp32s3/*.bin firmware/output/ || true
           cp downloaded-artifacts/printfarmbutton-esp32s3/*.md5 firmware/output/ || true
-          cp downloaded-artifacts/printfarmbutton-esp32c3/*.bin firmware/output/ || true
-          cp downloaded-artifacts/printfarmbutton-esp32c3/*.md5 firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-esp32c3-supermini/*.bin firmware/output/ || true
+          cp downloaded-artifacts/printfarmbutton-esp32c3-supermini/*.md5 firmware/output/ || true
 
       - name: Get version from git tag or branch
         id: get_version
@@ -130,13 +130,13 @@ jobs:
             new_install_prompt_erase: true
           }' > firmware/output/manifest.json
 
-          for target in esp32s3 esp32c3; do
+          for target in esp32s3 esp32c3-supermini; do
             if [ -f "downloaded-artifacts/printfarmbutton-$target/manifest.json" ]; then
               jq --slurpfile new "downloaded-artifacts/printfarmbutton-$target/manifest.json" '.builds += $new' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
             else
               echo "Warning: manifest for $target not found, creating basic entry"
               chip_family="ESP32"
-              if [ "$target" = "esp32c3" ]; then
+              if [ "$target" = "esp32c3-supermini" ]; then
                 chip_family="ESP32-C3"
               fi
               jq --arg chip "$chip_family" --arg path "printfarmbutton-$target.bin" \
