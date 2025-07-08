@@ -1,6 +1,6 @@
 substitutions:
-  led_gpio: "2"
   button_gpio: "1"
+  led_gpio: "2"
   manifest_file: "manifest-zero.json"
 
 # https://www.espboards.dev/esp32/esp32-s3-zero/
