@@ -121,20 +121,35 @@ jobs:
           mkdir -p firmware/output
           for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero; do
             if [ -d "downloaded-artifacts/$target" ]; then
-              # Rename files to include target in the name to avoid conflicts
+              # Determine new filename pattern: printfarmbutton-<type>-<family>
+              board_type=""
+              chip_family=""
+              if [[ "$target" == *"supermini"* ]]; then
+                board_type="supermini"
+              elif [[ "$target" == *"zero"* ]]; then
+                board_type="zero"
+              fi
+              
+              if [[ "$target" == *"s3"* ]]; then
+                chip_family="esp32s3"
+              elif [[ "$target" == *"c3"* ]]; then
+                chip_family="esp32c3"
+              fi
+              
+              # Rename files to include board type and chip family
               for bin_file in downloaded-artifacts/$target/*.bin; do
                 if [ -f "$bin_file" ]; then
                   filename=$(basename "$bin_file")
-                  # Replace printfarmbutton with printfarmbutton-$target
-                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$target/")
+                  # Replace printfarmbutton with printfarmbutton-<type>-<family>
+                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$board_type-$chip_family/")
                   cp "$bin_file" "firmware/output/$new_filename"
                 fi
               done
               for md5_file in downloaded-artifacts/$target/*.md5; do
                 if [ -f "$md5_file" ]; then
                   filename=$(basename "$md5_file")
-                  # Replace printfarmbutton with printfarmbutton-$target
-                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$target/")
+                  # Replace printfarmbutton with printfarmbutton-<type>-<family>
+                  new_filename=$(echo "$filename" | sed "s/printfarmbutton/printfarmbutton-$board_type-$chip_family/")
                   cp "$md5_file" "firmware/output/$new_filename"
                 fi
               done
@@ -151,16 +166,8 @@ jobs:
           fi
           echo "VERSION=$VERSION" >> $GITHUB_ENV
 
-      - name: Create ESP Web Tools manifest files
+      - name: Create manifest files
         run: |
-          # Create the main combined manifest for ESP Web Tools
-          jq -n --arg version "$VERSION" '{
-            name: "PrintFarmButton",
-            version: $version,
-            builds: [],
-            new_install_prompt_erase: true
-          }' > firmware/output/manifest.json
-
           # Create separate manifests for OTA updates
           jq -n --arg version "$VERSION" '{
             name: "PrintFarmButton SuperMini",
@@ -185,16 +192,27 @@ jobs:
               echo "Found artifact directory: downloaded-artifacts/$target"
               ls -la "downloaded-artifacts/$target"
               
-              # Determine project name and target manifest based on target name
+              # Determine project name, target manifest, and filename pattern
               project_name="spuder.printfarmbutton"
               target_manifest=""
+              board_type=""
+              chip_family=""
+              
               if [[ "$target" == *"supermini"* ]]; then
                 target_manifest="firmware/output/manifest-supermini.json"
+                board_type="supermini"
               elif [[ "$target" == *"zero"* ]]; then
                 target_manifest="firmware/output/manifest-zero.json"
+                board_type="zero"
               else
                 echo "Error: Cannot determine target manifest for: $target"
                 exit 1
+              fi
+              
+              if [[ "$target" == *"s3"* ]]; then
+                chip_family="esp32s3"
+              elif [[ "$target" == *"c3"* ]]; then
+                chip_family="esp32c3"
               fi
               
               # Check if manifest.json exists
@@ -207,26 +225,25 @@ jobs:
                 manifest_content=$(cat "downloaded-artifacts/$target/manifest.json")
                 
                 # Update file paths in the manifest to use renamed files
-                updated_manifest=$(echo "$manifest_content" | jq --arg target "$target" --arg project "$project_name" '
+                updated_manifest=$(echo "$manifest_content" | jq --arg board_type "$board_type" --arg chip_family "$chip_family" --arg project "$project_name" '
                   . + {"project": $project} |
-                  if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton"; "printfarmbutton-" + $target))] else . end |
-                  if .ota then .ota.path = (.ota.path | gsub("printfarmbutton"; "printfarmbutton-" + $target)) else . end
+                  if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton"; "printfarmbutton-" + $board_type + "-" + $chip_family))] else . end |
+                  if .ota then .ota.path = (.ota.path | gsub("printfarmbutton"; "printfarmbutton-" + $board_type + "-" + $chip_family)) else . end
                 ')
                 
-                # Add the build entry to both the main manifest and target manifest
-                jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+                # Add the build entry to the target manifest only
                 jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
                 
-                echo "Successfully added $target to manifests using ESPHome manifest"
+                echo "Successfully added $target to manifest using ESPHome manifest"
               else
                 echo "No ESPHome manifest found for $target, creating fallback entry..."
                 
                 # Create fallback manifest entry
-                chip_family="ESP32"
+                chip_family_name="ESP32"
                 if [[ "$target" == *"s3"* ]]; then
-                  chip_family="ESP32-S3"
+                  chip_family_name="ESP32-S3"
                 elif [[ "$target" == *"c3"* ]]; then
-                  chip_family="ESP32-C3"
+                  chip_family_name="ESP32-C3"
                 fi
                 
                 # Look for binary files (use renamed files in output directory)
@@ -234,18 +251,18 @@ jobs:
                 ota_bin=""
                 
                 # Check for renamed files in output directory
-                if [ -f "firmware/output/printfarmbutton-$target.factory.bin" ]; then
-                  factory_bin="printfarmbutton-$target.factory.bin"
+                if [ -f "firmware/output/printfarmbutton-$board_type-$chip_family.factory.bin" ]; then
+                  factory_bin="printfarmbutton-$board_type-$chip_family.factory.bin"
                 fi
                 
-                if [ -f "firmware/output/printfarmbutton-$target.ota.bin" ]; then
-                  ota_bin="printfarmbutton-$target.ota.bin"
+                if [ -f "firmware/output/printfarmbutton-$board_type-$chip_family.ota.bin" ]; then
+                  ota_bin="printfarmbutton-$board_type-$chip_family.ota.bin"
                 fi
                 
                 # Create manifest entry
                 if [ -n "$factory_bin" ] && [ -n "$ota_bin" ]; then
                   echo "Creating full manifest entry with factory and OTA binaries"
-                  manifest_entry=$(jq -n --arg chip "$chip_family" --arg project "$project_name" --arg factory_path "$factory_bin" --arg ota_path "$ota_bin" '{
+                  manifest_entry=$(jq -n --arg chip "$chip_family_name" --arg project "$project_name" --arg factory_path "$factory_bin" --arg ota_path "$ota_bin" '{
                     "chipFamily": $chip, 
                     "project": $project, 
                     "parts": [{"path": $factory_path, "offset": 0}],
@@ -253,7 +270,7 @@ jobs:
                   }')
                 elif [ -n "$factory_bin" ]; then
                   echo "Creating manifest entry with factory binary only"
-                  manifest_entry=$(jq -n --arg chip "$chip_family" --arg project "$project_name" --arg factory_path "$factory_bin" '{
+                  manifest_entry=$(jq -n --arg chip "$chip_family_name" --arg project "$project_name" --arg factory_path "$factory_bin" '{
                     "chipFamily": $chip, 
                     "project": $project, 
                     "parts": [{"path": $factory_path, "offset": 0}]
@@ -265,8 +282,7 @@ jobs:
                   exit 1
                 fi
                 
-                # Add to both main manifest and target manifest
-                jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' firmware/output/manifest.json > temp.json && mv temp.json firmware/output/manifest.json
+                # Add to target manifest only
                 jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
                 
                 echo "Successfully created fallback manifest entry for $target"
@@ -279,9 +295,6 @@ jobs:
             fi
           done
 
-          echo "Final main manifest:"
-          jq '.' firmware/output/manifest.json
-          echo ""
           echo "Final supermini manifest:"
           jq '.' firmware/output/manifest-supermini.json
           echo ""
