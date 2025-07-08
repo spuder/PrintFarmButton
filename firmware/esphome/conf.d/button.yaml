@@ -7,8 +7,8 @@ binary_sensor:
   internal: true
   pin:
     number: ${button_gpio}
-    mode: INPUT_DOWN
-    inverted: true
+    mode: INPUT_PULLDOWN
+    inverted: false
   filters:
   - delayed_on: 100ms
   - delayed_off: 100ms
