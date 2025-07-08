@@ -3,7 +3,6 @@ esphome:
   friendly_name: PrintFarmButton
   name_add_mac_suffix: true
   project:
-    name: spuder.PrintFarmButton
     version: ${version}
   on_boot:
     then:

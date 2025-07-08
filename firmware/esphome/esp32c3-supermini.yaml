@@ -9,3 +9,6 @@ esp32:
 
 packages:
   common: !include common.yaml
+
+esphome:
+  name: spuder.printfarmbutton-c3-supermini
