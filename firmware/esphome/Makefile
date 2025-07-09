@@ -2,25 +2,47 @@
 
 ESPHOME ?= esphome
 
-.PHONY: clean build-s3 run-s3 build-c3 run-c3
+.PHONY: clean build-s3-mini run-s3-mini build-c3-mini run-c3-mini build-s3-zero run-s3-zero build-c3-zero run-c3-zero
 
+# Clean all build artifacts
 clean:
-	rm -rf .esphome/build/printfarmbutton-s3
-	rm -rf .esphome/build/printfarmbutton-c3
-	rm -f ../output/printfarmbutton-esp32s3.bin ../output/printfarmbutton-esp32c3.bin ../output/printfarmbutton-esp32s3.bin.md5 ../output/printfarmbutton-esp32c3.bin.md5 ../output/manifest.json
+	rm -rf .esphome/build/printfarmbutton*
+	rm -rf .esphome/.storage
 
-build-s3:
-	esphome compile firmware/esphome/esp32s3.yaml
+# ESP32-S3 SuperMini builds
+build-s3-mini:
+	$(ESPHOME) compile esp32s3-supermini.yaml
 
-run-s3:
-	esphome run firmware/esphome/esp32s3.yaml
+run-s3-mini:
+	$(ESPHOME) run esp32s3-supermini.yaml
 
-build-c3:
-	esphome compile firmware/esphome/esp32c3.yaml
+# ESP32-C3 SuperMini builds  
+build-c3-mini:
+	$(ESPHOME) compile esp32c3-supermini.yaml
 
-run-c3:
-	esphome run firmware/esphome/esp32c3.yaml
+run-c3-mini:
+	$(ESPHOME) run esp32c3-supermini.yaml
 
-# For backward compatibility, keep 's3' and 'c3' as aliases for 'run-s3' and 'run-c3'
-s3: run-s3
-c3: run-c3
+# ESP32-S3 Zero builds
+build-s3-zero:
+	$(ESPHOME) compile esp32s3-zero.yaml
+
+run-s3-zero:
+	$(ESPHOME) run esp32s3-zero.yaml
+
+# ESP32-C3 Zero builds
+build-c3-zero:
+	$(ESPHOME) compile esp32c3-zero.yaml
+
+run-c3-zero:
+	$(ESPHOME) run esp32c3-zero.yaml
+
+# Clean and build targets (automatically clean before building different chip families)
+clean-build-s3-mini: clean build-s3-mini
+clean-build-c3-mini: clean build-c3-mini  
+clean-build-s3-zero: clean build-s3-zero
+clean-build-c3-zero: clean build-c3-zero
+
+# For backward compatibility
+s3: run-s3-mini
+c3: run-c3-mini

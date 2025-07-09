@@ -18,10 +18,20 @@ See the state of your prints with a physical LED & microcontroller. With the pus
 
 ## Setup
 
-```
+```bash
 cd firmware/esphome
-esphome compile config.yaml
-esphome upload config.yaml
+
+# For ESP32-S3 SuperMini boards:
+make run-s3-mini
+
+# For ESP32-C3 SuperMini boards:  
+make run-c3-mini
+
+# For ESP32-S3 Zero boards:
+make run-s3-zero
+
+# For ESP32-C3 Zero boards:
+make run-c3-zero
 ```
 
 You will see a new wifi network named `printfarmbutton-xxxx`. Join the network and navigate to [192.168.4.1](http://192.168.4.1)
@@ -63,50 +73,92 @@ To flash, ensure you have the `esphome` cli installed (`brew install esphome`)
 
 ```bash
 cd firmware/esphome
-make s3   # For ESP32-S3 boards
-make c3   # For ESP32-C3 boards
+
+# Build and flash for specific board types:
+make run-s3-mini    # ESP32-S3 SuperMini boards
+make run-c3-mini    # ESP32-C3 SuperMini boards  
+make run-s3-zero    # ESP32-S3 Zero boards
+make run-c3-zero    # ESP32-C3 Zero boards
+
+# Or just compile without flashing:
+make build-s3-mini  # Compile only for ESP32-S3 SuperMini
+make build-c3-mini  # Compile only for ESP32-C3 SuperMini
+make build-s3-zero  # Compile only for ESP32-S3 Zero
+make build-c3-zero  # Compile only for ESP32-C3 Zero
 ```
 
-To clean build artifacts:
+To clean build artifacts (recommended when switching between chip families):
 ```bash
 make clean
 ```
 
-You can still use the BOARD_TYPE environment variable and esphome directly if needed:
+For clean builds (automatically clean then build):
 ```bash
-export BOARD_TYPE=esp32-c3
-esphome run config.yaml --device printfarmbutton-xxxx
+make clean-build-s3-mini  # Clean then build ESP32-S3 SuperMini
+make clean-build-c3-mini  # Clean then build ESP32-C3 SuperMini
+make clean-build-s3-zero  # Clean then build ESP32-S3 Zero  
+make clean-build-c3-zero  # Clean then build ESP32-C3 Zero
 ```
-Or in a single command:
+
+**Legacy commands** (for backward compatibility):
 ```bash
-BOARD_TYPE=esp32-c3 esphome run config.yaml --device printfarmbutton-xxxx
+make s3   # Alias for run-s3-mini
+make c3   # Alias for run-c3-mini
 ```
 
 ## ESPHome Makefile Usage
 
-This project provides a Makefile for building and flashing ESPHome firmware for PrintFarmButton devices.
+This project provides a Makefile for building and flashing ESPHome firmware for PrintFarmButton devices across different board variants.
 
-### Usage
+### Board Types Supported
 
-- **Build only:**
-  - `make build-s3` — Compile firmware for ESP32-S3
-  - `make build-c3` — Compile firmware for ESP32-C3
+- **ESP32-S3 SuperMini** (`s3-mini`) - Uses GPIO3 for LED, GPIO0 for button
+- **ESP32-C3 SuperMini** (`c3-mini`) - Uses GPIO3 for LED, GPIO0 for button  
+- **ESP32-S3 Zero** (`s3-zero`) - Uses GPIO1 for LED, GPIO2 for button
+- **ESP32-C3 Zero** (`c3-zero`) - Uses GPIO0 for LED, GPIO1 for button
 
-- **Build and flash (run):**
-  - `make run-s3` — Compile and upload firmware to ESP32-S3
-  - `make run-c3` — Compile and upload firmware to ESP32-C3
+⚠️ **Warning**: ESP32-C3 SuperMini boards from AliExpress are known to have overheating issues and WiFi connectivity problems. Consider using ESP32-S3 variants or ESP32-C3 Zero boards for better reliability.
 
-- **Legacy aliases:**
-  - `make s3` — Alias for `make run-s3`
-  - `make c3` — Alias for `make run-c3`
+### Available Commands
 
-- **Clean build artifacts:**
-  - `make clean` — Remove build and output files
+**Build and Flash:**
+- `make run-s3-mini` — Build and upload to ESP32-S3 SuperMini
+- `make run-c3-mini` — Build and upload to ESP32-C3 SuperMini
+- `make run-s3-zero` — Build and upload to ESP32-S3 Zero
+- `make run-c3-zero` — Build and upload to ESP32-C3 Zero
+
+**Build Only:**
+- `make build-s3-mini` — Compile firmware for ESP32-S3 SuperMini
+- `make build-c3-mini` — Compile firmware for ESP32-C3 SuperMini
+- `make build-s3-zero` — Compile firmware for ESP32-S3 Zero
+- `make build-c3-zero` — Compile firmware for ESP32-C3 Zero
+
+**Clean Builds:**
+- `make clean-build-s3-mini` — Clean then build ESP32-S3 SuperMini
+- `make clean-build-c3-mini` — Clean then build ESP32-C3 SuperMini
+- `make clean-build-s3-zero` — Clean then build ESP32-S3 Zero
+- `make clean-build-c3-zero` — Clean then build ESP32-C3 Zero
+
+**Maintenance:**
+- `make clean` — Remove all build artifacts and cache
+
+**Legacy Aliases:**
+- `make s3` — Alias for `run-s3-mini`
+- `make c3` — Alias for `run-c3-mini`
 
 ### Notes
-- You must have [ESPHome](https://esphome.io/) installed and available in your PATH.
-- Edit the appropriate YAML files in `firmware/esphome/` to configure your device.
-- Output binaries are placed in `firmware/output/`.
+- You must have [ESPHome](https://esphome.io/) installed and available in your PATH
+- Each board type has different GPIO configurations for LED and button
+- Clean builds are recommended when switching between different chip families (ESP32-S3 ↔ ESP32-C3)
+- Output binaries are placed in the ESPHome build directory
+
+### Troubleshooting
+
+If you get CMake errors about target mismatches, run `make clean` first:
+```bash
+make clean
+make run-c3-mini  # or whichever target you want
+```
 
 ---
 
