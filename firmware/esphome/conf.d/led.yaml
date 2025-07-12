@@ -6,7 +6,7 @@ light:
   pin: ${led_gpio}
   num_leds: 13
   rgb_order: GRB
-  # rmt_channel: 0
+  # rmt_channel: 0  # Removed invalid option
   # rmt_symbols: 96
   state_topic:
   internal: false #set to true to hide
