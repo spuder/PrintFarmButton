@@ -6,6 +6,7 @@ substitutions:
 # https://www.espboards.dev/esp32/esp32-s3-super-mini/
 esp32:
   board: esp32-s3-devkitc-1
-
+  framework:
+    type: esp-idf
 packages:
   common: !include common.yaml
