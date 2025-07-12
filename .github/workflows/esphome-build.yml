@@ -48,10 +48,11 @@ jobs:
           cat firmware/esphome/conf.d/version.yaml
 
       - name: Build firmware
-        uses: esphome/build-action@v6
+        uses: esphome/build-action@v7
         with:
           yaml-file: firmware/esphome/${{ matrix.yaml_file }}
           complete-manifest: false
+          version: 2025.7.0b1
 
       - name: List build output
         run: |
