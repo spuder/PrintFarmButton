@@ -11,6 +11,9 @@ permissions:
   actions: read
   checks: write
 
+env:
+  ESPHOME_VERSION: 2025.7.0b1
+
 jobs:
   build-esp32c3:
     runs-on: ubuntu-latest
@@ -52,7 +55,7 @@ jobs:
         with:
           yaml-file: firmware/esphome/${{ matrix.yaml_file }}
           complete-manifest: false
-          version: 2025.7.0b1
+          version: ${{ env.ESPHOME_VERSION }}
 
       - name: List build output
         run: |
@@ -148,10 +151,11 @@ jobs:
           cat firmware/esphome/conf.d/version.yaml
 
       - name: Build firmware
-        uses: esphome/build-action@v6
+        uses: esphome/build-action@v7
         with:
           yaml-file: firmware/esphome/${{ matrix.yaml_file }}
           complete-manifest: false
+          version: ${{ env.ESPHOME_VERSION }}
 
       - name: List build output
         run: |
