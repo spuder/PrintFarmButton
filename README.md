@@ -84,27 +84,40 @@ BOARD_TYPE=esp32-c3 esphome run config.yaml --device printfarmbutton-xxxx
 
 ## ESPHome Makefile Usage
 
-This project provides a Makefile for building and flashing ESPHome firmware for PrintFarmButton devices.
+This project provides a Makefile for building and flashing ESPHome firmware for PrintFarmButton devices. You can use either the system ESPHome or Podman container for builds.
 
 ### Usage
 
 - **Build only:**
-  - `make build-s3` — Compile firmware for ESP32-S3
-  - `make build-c3` — Compile firmware for ESP32-C3
+  - `make build-s3-mini` — Compile firmware for ESP32-S3 SuperMini
+  - `make build-c3-mini` — Compile firmware for ESP32-C3 SuperMini
+  - `make build-s3-zero` — Compile firmware for ESP32-S3 Zero
+  - `make build-c3-zero` — Compile firmware for ESP32-C3 Zero
 
 - **Build and flash (run):**
-  - `make run-s3` — Compile and upload firmware to ESP32-S3
-  - `make run-c3` — Compile and upload firmware to ESP32-C3
-
-- **Legacy aliases:**
-  - `make s3` — Alias for `make run-s3`
-  - `make c3` — Alias for `make run-c3`
+  - `make run-s3-mini` — Compile and upload firmware to ESP32-S3 SuperMini
+  - `make run-c3-mini` — Compile and upload firmware to ESP32-C3 SuperMini
+  - `make run-s3-zero` — Compile and upload firmware to ESP32-S3 Zero
+  - `make run-c3-zero` — Compile and upload firmware to ESP32-C3 Zero
 
 - **Clean build artifacts:**
   - `make clean` — Remove build and output files
 
+- **Legacy aliases:**
+  - `make s3` — Alias for `make run-s3-mini`
+  - `make c3` — Alias for `make run-c3-mini`
+
+### Podman Support
+You can use Podman to run ESPHome builds in a container. To do so, set the `ESPHOME_MODE` environment variable:
+
+```sh
+ESPHOME_MODE=podman make build-s3-mini
+```
+
+This will use the Podman container and reuse the PlatformIO cache for faster builds.
+
 ### Notes
-- You must have [ESPHome](https://esphome.io/) installed and available in your PATH.
+- You must have [ESPHome](https://esphome.io/) installed and available in your PATH, or use Podman as described above.
 - Edit the appropriate YAML files in `firmware/esphome/` to configure your device.
 - Output binaries are placed in `firmware/output/`.
 
