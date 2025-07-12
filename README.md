@@ -9,12 +9,12 @@ See the state of your prints with a physical LED & microcontroller. With the pus
 
 ## Supported Print Queues
 
-| Print Queue     | Status        |
-|-----------------|--------------|
-| printago.io     | ✅ Supported  |
-| simplyprint     | 🕵️ Evaluating |
-| 3dprinteros     | 🕵️ Evaluating |
-| autofarm        | 🕵️ Evaluating |
+| Print Queue     | Status              |
+|-----------------|---------------------|
+| printago.io     | ✅ Supported        |
+| Bambu LAN       | 🚧 In Progress |
+| simplyprint     | 🕵️ Evaluating      |
+| 3dprinteros     | 🕵️ Evaluating      |
 
 ## Setup
 
@@ -55,7 +55,7 @@ Once you've joined it to your wifi, navigate to `http://printfarmbutton-xxxxxx.l
 ### Wiring Diagram
 
 
-![Schematic](images/schematic.png)
+![Schematic](images/Schematic.png)
 
 ## Firmware
 
