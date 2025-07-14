@@ -16,6 +16,11 @@ See the state of your prints with a physical LED & microcontroller. With the pus
 | simplyprint     | 🕵️ Evaluating      |
 | 3dprinteros     | 🕵️ Evaluating      |
 
+
+**Support PrintFarmButton:**
+Printago is free forever! If you are signing up, please use our affiliate link to help support this project:
+[https://www.printago.io?via=spuder](https://www.printago.io?via=spuder)
+
 ## Setup
 
 ```
