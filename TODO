@@ -11,7 +11,7 @@
 [x] Debug why it starts purple pusling on boot
 [x] Support Red
 [ ] Reduce power consumption to ~300 to ~500
-[ ] Verify how many milliamps p1s usb port suports
+[x] Verify how many milliamps p1s usb port suports
 [x] Add support for downloading updates
 [ ] Implement improv_serial
 [x] Research improv via ble
@@ -22,3 +22,5 @@
 [ ] Make auto update permenant so it survives updates
 [x] Why does it always say there is an update available? 
 [ ] Press and hold button to mark print as failed
+[x] Fix content length 0 in curl commands on webpage
+[x] Should curl auto enable updaates? 
