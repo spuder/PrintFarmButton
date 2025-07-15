@@ -119,9 +119,13 @@
       cursor: pointer;
       outline: none;
     }
-    .mode-btn.active, .mode-btn:focus {
+    .mode-btn:hover, .mode-btn:focus {
       background: #1976d2;
       color: #fff;
+    }
+    .mode-btn.active {
+      background: #1976d2 !important;
+      color: #fff !important;
     }
     .provision-form label {
       margin-top: 1em;
@@ -218,6 +222,10 @@
       background: #1976d2;
       color: #fff;
     }
+    .section.alt .mode-btn.active {
+      background: #1976d2 !important;
+      color: #fff !important;
+    }
   </style>
 </head>
 <body>
@@ -277,6 +285,9 @@
   <section class="section alt">
     <div class="container">
       <h2>Printago Configuration</h2>
+      <div style="text-align: center; margin-bottom: 1.5em;">
+        <img src="https://raw.githubusercontent.com/printago/printago.github.io/main/static/img/logo.svg" alt="Printago Logo" style="height: 60px; margin-bottom: 1em;" />
+      </div>
       <div class="provision-mode-toggle" id="printago-mode-toggle">
         <button id="printago-auto-mode-btn" class="mode-btn active" type="button">Automatic</button>
         <button id="printago-manual-mode-btn" class="mode-btn" type="button">Manual</button>
@@ -302,11 +313,10 @@
         <label>MQTT Endpoint
           <input type="text" id="mqtt-endpoint" placeholder="MQTT Endpoint" value="realtime.printago.io" />
         </label>
-        <button id="configure-btn" class="mode-btn" style="margin-top:1em;background:#ccc;color:#888;cursor:not-allowed;" disabled>Configure</button>
-        <details id="curl-details" style="margin:1.5em 0;">
-          <summary style="cursor:pointer;font-weight:bold;">curl</summary>
-          <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:1em;"></pre>
-        </details>
+        <div style="margin:1.5em 0;">
+          <h3 style="font-weight:bold;margin-bottom:0.5em;">curl commands</h3>
+          <pre id="curl-commands" style="background:#f3f3f3;border-radius:6px;padding:1em;overflow-x:auto;font-size:0.95em;margin-top:0.5em;"></pre>
+        </div>
         <details style="margin:1.5em 0;">
           <summary style="cursor:pointer;font-weight:bold;">Privacy Info</summary>
           <p style="margin-top:1em;max-width:350px;margin-left:auto;margin-right:auto;">
@@ -351,7 +361,6 @@
   const manualFields = document.getElementById('manual-fields');
   const fetchBtn = document.getElementById('fetch-printers');
   const printerSelect = document.getElementById('printer-select');
-  const configureBtn = document.getElementById('configure-btn');
   const esp32NameInput = document.getElementById('esp32-name');
 
   autoBtn.onclick = () => {
@@ -359,12 +368,22 @@
     manualBtn.classList.remove('active');
     autoFields.style.display = '';
     manualFields.style.display = 'none';
+    // Clear any inline styles to let CSS take over
+    autoBtn.style.background = '';
+    autoBtn.style.color = '';
+    manualBtn.style.background = '';
+    manualBtn.style.color = '';
   };
   manualBtn.onclick = () => {
     manualBtn.classList.add('active');
     autoBtn.classList.remove('active');
     manualFields.style.display = '';
     autoFields.style.display = 'none';
+    // Clear any inline styles to let CSS take over
+    autoBtn.style.background = '';
+    autoBtn.style.color = '';
+    manualBtn.style.background = '';
+    manualBtn.style.color = '';
   };
 
   // ESP32 Name detection logic
@@ -402,6 +421,7 @@
         // Only update if the field is empty or matches the last detected name
         if (!esp32NameInput.value || esp32NameInput.value === lastName) {
           esp32NameInput.value = name;
+          updateCurlBlock(); // Update curl commands when ESP32 name is detected
         }
         lastName = name;
       }
@@ -409,34 +429,11 @@
   })();
 
   function updateConfigureBtnState() {
-  const esp32Name = esp32NameInput?.value.trim();
-  const apiKey = document.getElementById('api-key')?.value.trim();
-  const storeId = document.getElementById('store-id')?.value.trim();
-  const printerSelected = printerSelect && printerSelect.value;
-  // Only enable if all 3 fields and a printer are set
-  if (esp32Name && apiKey && storeId && printerSelected) {
-    configureBtn.disabled = false;
-    configureBtn.style.background = '';
-    configureBtn.style.color = '';
-    configureBtn.style.cursor = '';
-  } else {
-    configureBtn.disabled = true;
-    configureBtn.style.background = '#ccc';
-    configureBtn.style.color = '#888';
-    configureBtn.style.cursor = 'not-allowed';
+    // Configure button was removed, but this function is still called
+    // by event listeners. Keeping empty to avoid JS errors.
   }
-}
 
-if (esp32NameInput) {
-  esp32NameInput.addEventListener('input', updateConfigureBtnState);
-}
-['api-key', 'store-id'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('input', updateConfigureBtnState);
-});
-if (printerSelect) {
-  printerSelect.addEventListener('change', updateConfigureBtnState);
-}
+// Event listeners removed - configure button no longer exists
 
 // Fetch Printers button logic
 if (fetchBtn) {
@@ -451,7 +448,6 @@ if (fetchBtn) {
     printerSelect.innerHTML = '';
     if (!apiKey || !storeId) {
       printerList.innerHTML = '<div class="error">API Key and Store ID are required.</div>';
-      updateConfigureBtnState();
       return;
     }
     printerList.innerHTML = '<div>Fetching printers...</div>';
@@ -468,72 +464,26 @@ if (fetchBtn) {
       const data = await resp.json();
       if (!Array.isArray(data)) {
         printerList.innerHTML = '<div class="error">Unexpected API response.</div>';
-        updateConfigureBtnState();
         return;
       }
       if (data.length === 0) {
         printerList.innerHTML = '<div>No printers found.</div>';
-        updateConfigureBtnState();
         return;
       }
       // Populate dropdown
       printerSelect.innerHTML = '<option value="">Select a printer...</option>' +
         data.map(p => `<option value="${p.id}">${p.name || 'Printer'} (${p.id || ''})</option>`).join('');
       printerList.innerHTML = '<div class="status">Printers fetched successfully.</div>';
-      updateConfigureBtnState();
+      updateCurlBlock(); // Update curl commands when printers are loaded
     } catch (err) {
       printerList.innerHTML = `<div class="error">${err.message}</div>`;
-      updateConfigureBtnState();
     }
   };
 }
 
-// Configure button logic
-if (configureBtn) {
-  configureBtn.onclick = async function (e) {
-    e.preventDefault();
-    const statusDiv = document.getElementById('printer-list');
-    const esp32Name = document.getElementById('esp32-name')?.value.trim();
-    const apiKey = document.getElementById('api-key')?.value.trim();
-    const storeId = document.getElementById('store-id')?.value.trim();
-    const mqttEndpoint = document.getElementById('mqtt-endpoint')?.value.trim();
-    if (!esp32Name || !apiKey || !storeId) return;
-    const esp32Host = `${esp32Name}.local`;
-    statusDiv.innerHTML = '<div>Configuring device...</div>';
-    let successCount = 0;
-    let failCount = 0;
-    let results = [];
-    const cmds = [
-      { url: `http://${esp32Host}/text/username/set?value=${encodeURIComponent(storeId)}` },
-      { url: `http://${esp32Host}/text/api_key/set?value=${encodeURIComponent(apiKey)}` },
-      { url: `http://${esp32Host}/text/printer_id/set?value=${encodeURIComponent(printerSelect?.value || '')}` },
-      { url: `http://${esp32Host}/text/mqtt_endpoint/set?value=${encodeURIComponent(mqttEndpoint || '')}` }
-    ];
-    for (const cmd of cmds) {
-      try {
-        const resp = await fetch(cmd.url, { method: 'POST' });
-        if (resp.ok) {
-          successCount++;
-          results.push(`<div style='color:#007a00;'>✔ ${cmd.url}</div>`);
-        } else {
-          failCount++;
-          results.push(`<div style='color:#c00;'>✖ ${cmd.url} (HTTP ${resp.status})</div>`);
-        }
-      } catch (err) {
-        failCount++;
-        results.push(`<div style='color:#c00;'>✖ ${cmd.url} (${err.message})</div>`);
-      }
-    }
-    if (failCount === 0) {
-      statusDiv.innerHTML = `<div class='status'>All configuration commands succeeded!</div>` + results.join('');
-    } else {
-      statusDiv.innerHTML = `<div class='error'>${failCount} command(s) failed.</div>` + results.join('');
-    }
-  };
-}
+// Configure button was removed - handler cleaned up
 
-// Initial state
-updateConfigureBtnState();
+// Initial state - configure button removed
 
 // Printago Automatic/Manual toggle logic
 const printagoAutoBtn = document.getElementById('printago-auto-mode-btn');
@@ -546,12 +496,22 @@ if (printagoAutoBtn && printagoManualBtn && printagoAutoFields && printagoManual
     printagoManualBtn.classList.remove('active');
     printagoAutoFields.style.display = '';
     printagoManualFields.style.display = 'none';
+    // Clear any inline styles to let CSS take over
+    printagoAutoBtn.style.background = '';
+    printagoAutoBtn.style.color = '';
+    printagoManualBtn.style.background = '';
+    printagoManualBtn.style.color = '';
   };
   printagoManualBtn.onclick = () => {
     printagoManualBtn.classList.add('active');
     printagoAutoBtn.classList.remove('active');
     printagoManualFields.style.display = '';
     printagoAutoFields.style.display = 'none';
+    // Clear any inline styles to let CSS take over
+    printagoAutoBtn.style.background = '';
+    printagoAutoBtn.style.color = '';
+    printagoManualBtn.style.background = '';
+    printagoManualBtn.style.color = '';
   };
 }
 
@@ -562,12 +522,13 @@ function getCurlCommands() {
   const apiKey = document.getElementById('api-key')?.value.trim() || '';
   const storeId = document.getElementById('store-id')?.value.trim() || '';
   const mqttEndpoint = document.getElementById('mqtt-endpoint')?.value.trim() || '';
+  const printerSelect = document.getElementById('printer-select');
   const esp32Host = esp32Name ? `${esp32Name}.local` : '<esp32>.local';
   return [
-    `curl "http://${esp32Host}/text/username/set?value=${storeId}" -X POST`,
-    `curl "http://${esp32Host}/text/api_key/set?value=${apiKey}" -X POST`,
-    `curl "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}" -X POST`,
-    `curl "http://${esp32Host}/text/mqtt_endpoint/set?value=${mqttEndpoint}" -X POST`
+    `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/username/set?value=${storeId}"`,
+    `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/api_key/set?value=${apiKey}"`,
+    `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}"`,
+    `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/mqtt_endpoint/set?value=${mqttEndpoint}"`
   ].join('\n');
 }
 
@@ -575,26 +536,45 @@ function updateCurlBlock() {
   const curlBlock = document.getElementById('curl-commands');
   if (curlBlock) {
     curlBlock.textContent = getCurlCommands();
+    
+    // Check if all required fields are filled
+    const esp32Name = document.getElementById('esp32-name')?.value.trim() || '';
+    const printerSelect = document.getElementById('printer-select');
+    const mqttEndpoint = document.getElementById('mqtt-endpoint')?.value.trim() || '';
+    
+    const allFieldsFilled = esp32Name && printerSelect?.value && mqttEndpoint;
+    
+    // Set color based on field completion
+    curlBlock.style.color = allFieldsFilled ? '#28a745' : '#dc3545';
   }
 }
 
-const curlDetails = document.getElementById('curl-details');
-if (curlDetails) {
-  curlDetails.addEventListener('toggle', function() {
-    if (curlDetails.open) updateCurlBlock();
-  });
-}
-
-['esp32-name', 'api-key', 'store-id', 'printer-select'].forEach(id => {
-  const el = document.getElementById(id);
-  if (el) el.addEventListener('input', () => {
-    if (curlDetails && curlDetails.open) updateCurlBlock();
-  });
-  if (el && el.tagName === 'SELECT') {
-    el.addEventListener('change', () => {
-      if (curlDetails && curlDetails.open) updateCurlBlock();
-    });
+// Show curl commands and set up real-time updates
+document.addEventListener('DOMContentLoaded', function() {
+  updateCurlBlock();
+  
+  // Ensure initial button states are properly set
+  const autoBtn = document.getElementById('auto-mode-btn');
+  const printagoAutoBtn = document.getElementById('printago-auto-mode-btn');
+  if (autoBtn && autoBtn.classList.contains('active')) {
+    autoBtn.style.background = '#1976d2';
+    autoBtn.style.color = '#fff';
   }
+  if (printagoAutoBtn && printagoAutoBtn.classList.contains('active')) {
+    printagoAutoBtn.style.background = '#1976d2';
+    printagoAutoBtn.style.color = '#fff';
+  }
+  
+  // Real-time update for curl block on all relevant fields
+  ['esp32-name', 'api-key', 'store-id', 'printer-select', 'mqtt-endpoint'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.addEventListener('input', updateCurlBlock);
+      if (el.tagName === 'SELECT') {
+        el.addEventListener('change', updateCurlBlock);
+      }
+    }
+  });
 });
   </script>
 </body>
