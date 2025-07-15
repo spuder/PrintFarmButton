@@ -4,6 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Overpass:wght@400;700&display=swap" rel="stylesheet">
   <!-- <script src="https://cdn.jsdelivr.net/npm/improv-wifi-sdk@1.4.0/dist/launch-button.min.js"></script> -->
    <!-- <script src="https://unpkg.com/esp-web-tools@8.0.6/dist/web/install-button.js?module"></script> -->
   <!-- <script type="module">
@@ -226,6 +227,39 @@
       background: #1976d2 !important;
       color: #fff !important;
     }
+    
+    .call-to-action-button {
+      display: inline-block; /* Allows padding and margin to work correctly */
+      padding: 10px 20px; /* Reduced padding for smaller size */
+      background-color: #4CAF50; /* A pleasant green */
+      color: white; /* White text */
+      font-family: 'Arial', sans-serif; /* Clear, readable font */
+      font-size: 16px; /* Smaller font size */
+      font-weight: bold; /* Bold text */
+      text-decoration: none; /* Remove underline from link */
+      border-radius: 8px; /* Slightly rounded corners */
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Subtle shadow for depth */
+      transition: background-color 0.3s ease, transform 0.3s ease; /* Smooth hover effects */
+      text-align: center;
+      border: none; /* Remove default button border */
+      cursor: pointer; /* Indicate it's clickable */
+    }
+
+    .call-to-action-button:hover {
+      background-color: #45a049; /* Darker green on hover */
+      transform: translateY(-2px); /* Slight lift on hover */
+    }
+
+    .call-to-action-button:active {
+      background-color: #3e8e41; /* Even darker on active click */
+      transform: translateY(0); /* Return to original position */
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2); /* Smaller shadow on click */
+    }
+
+    .button-icon {
+      margin-right: 8px; /* Slightly less space between icon and text */
+      vertical-align: middle; /* Align icon with text */
+    }
   </style>
 </head>
 <body>
@@ -284,9 +318,20 @@
 
   <section class="section alt">
     <div class="container">
-      <h2>Printago Configuration</h2>
+      <div style="text-align: center; margin-bottom: 1.5em; display: flex; align-items: center; justify-content: center; gap: 10px;">
+        <img src="images/printago.svg" alt="Printago Logo" style="height: 60px;" />
+        <span style="font-family: 'Overpass', sans-serif; font-size: 2em; font-weight: bold; color: #1976d2; letter-spacing: -1px;">Printago</span>
+      </div>
       <div style="text-align: center; margin-bottom: 1.5em;">
-        <img src="https://raw.githubusercontent.com/printago/printago.github.io/main/static/img/logo.svg" alt="Printago Logo" style="height: 60px; margin-bottom: 1em;" />
+        <a href="https://www.printago.io?via=spuder" target="_blank" rel="noopener noreferrer" class="call-to-action-button">
+          <svg class="button-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+            <polyline points="15 3 21 3 21 9"></polyline>
+            <line x1="10" y1="14" x2="21" y2="3"></line>
+          </svg>
+          Sign Up - Free Forever
+        </a>
+        <p style="font-size: 0.85em; color: #666; margin-top: 0.5em; margin-bottom: 0;">Use our affiliate link to support the PrintFarmButton project</p>
       </div>
       <div class="provision-mode-toggle" id="printago-mode-toggle">
         <button id="printago-auto-mode-btn" class="mode-btn active" type="button">Automatic</button>
