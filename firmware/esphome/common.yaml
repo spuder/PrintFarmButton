@@ -5,7 +5,7 @@ esphome:
   project:
     name: spuder.printfarmbutton
     version: ${version}
-  min_version: 2025.7.0b2 #https://github.com/esphome/esphome/pull/5786
+  min_version: 2025.7.0
   on_boot:
     then:
     - light.turn_on:
@@ -32,6 +32,7 @@ logger:
 ota:
 - platform: esphome
 - platform: http_request
+- platform: web_server
 
 http_request:
   verify_ssl: false

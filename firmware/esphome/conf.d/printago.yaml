@@ -82,9 +82,17 @@ script:
             return "https://api.printago.io/v1/printers/" + id(printer_id).state;
           request_headers:
             authorization: !lambda |-
-              return ("ApiKey " + id(api_key_text).state).c_str();
+              static std::string key;
+              std::string raw_key = id(api_key_text).state;
+              raw_key.erase(std::remove_if(raw_key.begin(), raw_key.end(), ::isspace), raw_key.end());
+              key = "ApiKey " + raw_key;
+              return key.c_str();
             x-printago-storeid: !lambda |-
-              return id(username_text).state.c_str();
+              static std::string store;
+              std::string raw_store = id(username_text).state;
+              raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
+              store = raw_store;
+              return store.c_str();
           capture_response: true
           max_response_buffer_size: 2048
           on_response:
@@ -241,6 +249,7 @@ script:
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
         - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
+        - lambda: 'return !id(mqtt_port_text).state.empty();'
         - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
         - lambda: 'return id(printer_is_available_sensor).state;'
       then:
@@ -271,6 +280,63 @@ script:
       - lambda: |-
           ESP_LOGW("printago", "Not running mark_printer_ready: printer is not in the correct state (must be available and not already confirmed ready), or required fields are missing");
 
+- id: fetch_printago_printers
+  mode: queued
+  then:
+  - if:
+      condition:
+        and:
+        - lambda: 'return !id(api_key_text).state.empty();'
+        - lambda: 'return !id(username_text).state.empty();'
+      then:
+      - http_request.get:
+          url: "https://api.printago.io/v1/printers"
+          request_headers:
+            authorization: !lambda |-
+              static std::string key;
+              std::string raw_key = id(api_key_text).state;
+              raw_key.erase(std::remove_if(raw_key.begin(), raw_key.end(), ::isspace), raw_key.end());
+              key = "ApiKey " + raw_key;
+              return key.c_str();
+            x-printago-storeid: !lambda |-
+              static std::string store;
+              std::string raw_store = id(username_text).state;
+              raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
+              store = raw_store;
+              return store.c_str();
+          capture_response: true
+          max_response_buffer_size: 8192
+          on_response:
+            then:
+            - lambda: |-
+                ESP_LOGI("printago", "Fetch printers response: %d", response->status_code);
+                if (response->status_code == 200) {
+                  ESP_LOGI("printago", "Response body length: %d bytes", body.length());
+                  DynamicJsonDocument doc(8192);
+                  DeserializationError error = deserializeJson(doc, body);
+                  
+                  if (!error && doc.is<JsonArray>()) {
+                    JsonArray printers = doc.as<JsonArray>();
+                    ESP_LOGI("printago", "Found %d printers", printers.size());
+                    
+                    for (JsonVariant printer : printers) {
+                      if (printer.is<JsonObject>()) {
+                        JsonObject printerObj = printer.as<JsonObject>();
+                        const char* id = printerObj["id"] | "unknown";
+                        const char* name = printerObj["name"] | "unnamed";
+                        ESP_LOGI("printago", "Printer: %s (%s)", name, id);
+                      }
+                    }
+                  } else {
+                    ESP_LOGW("printago", "Failed to parse JSON response");
+                  }
+                } else {
+                  ESP_LOGW("printago", "HTTP error %d", response->status_code);
+                }
+      else:
+      - lambda: |-
+          ESP_LOGW("printago", "Not running fetch_printago_printers: api_key_text or username_text is missing");
+
 text_sensor:
 - platform: template
   name: "Printer Name"
@@ -280,6 +346,50 @@ text_sensor:
   web_server:
     sorting_group_id: printago
     sorting_weight: 2
+
+- platform: template
+  name: "MQTT Client ID"
+  id: mqtt_client_id_stored
+  state_topic:
+  internal: false
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 9
+  icon: "mdi:identifier"
+  lambda: |-
+    std::string username = id(username_text).state;
+
+    // Clean username
+    username.erase(std::remove_if(username.begin(), username.end(), ::isspace), username.end());
+
+    if (!username.empty()) {
+      // Generate MQTT client_id from username and last 6 digits of MAC address
+      std::string mac = get_mac_address();
+      mac.erase(std::remove(mac.begin(), mac.end(), ':'), mac.end());
+      
+      // Get last 6 digits of MAC address
+      std::string mac_suffix = mac.length() >= 6 ? mac.substr(mac.length() - 6) : mac;
+      
+      std::string client_id = "apiclient_" + username + "_" + mac_suffix;
+      
+      // Set MQTT credentials
+      id(mqtt_client_id).set_username(username.c_str());
+      id(mqtt_client_id).set_client_id(client_id.c_str());
+      
+      ESP_LOGI("mqtt", "Generated client_id: %s", client_id.c_str());
+      ESP_LOGI("mqtt", "MQTT Credentials Set - Username: %s, Client ID: %s", username.c_str(), client_id.c_str());
+      ESP_LOGI("mqtt", "Current MQTT Config - Broker: %s, Port: %s", 
+               id(mqtt_endpoint_text).state.c_str(), 
+               id(mqtt_port_text).state.c_str());
+      return client_id;
+    } else {
+      ESP_LOGW("mqtt", "Username is empty, cannot generate client_id");
+      return std::string(""); // Return empty string if no username
+    }
+  on_value:
+    then:
+    - lambda: |-
+        ESP_LOGI("mqtt", "Client ID value updated to: %s", x.c_str());
 
 text:
 - platform: template
@@ -293,6 +403,12 @@ text:
     sorting_group_id: printago
     sorting_weight: 5
   icon: "mdi:key"
+  on_value:
+    then:
+    - lambda: |-
+        ESP_LOGI("mqtt", "API Key changed, updating MQTT client ID");
+        // Trigger client ID generation
+        id(mqtt_client_id).set_password(x.c_str());
 
 - platform: template
   name: "Username" #This name is the key for the rest api, do not change
@@ -309,25 +425,8 @@ text:
     then:
     - lambda: |-
         ESP_LOGI("mqtt", "Username changed to: %s", x.c_str());
-
-        // Generate client_id with format: apiclient_<username>_<random_suffix>
-        std::string client_id = "apiclient_" + x + "_" + std::to_string(random_uint32());
-        ESP_LOGI("mqtt", "Setting client_id to: %s", client_id.c_str());
-
-        // Set both username and client_id
-        id(mqtt_client_id).set_username(x);
-        id(mqtt_client_id).set_client_id(client_id.c_str());
-
-        // Check if we should connect/reconnect to MQTT
-        if (!x.empty() && !id(printer_id).state.empty()) {
-          ESP_LOGI("mqtt", "Both username and printer ID are set, connecting to MQTT");
-          id(clear_printago_status).execute();
-          id(check_printago_status).execute();
-          id(mqtt_client_id).enable();
-        } else {
-          ESP_LOGI("mqtt", "Username or printer ID missing, disconnecting MQTT");
-          id(mqtt_client_id).disable();
-        }
+        // Trigger client ID generation
+        id(mqtt_client_id_stored).update();
 
 - platform: template
   id: printer_id_previous
@@ -356,8 +455,8 @@ text:
         ESP_LOGI("mqtt", "Printer ID changing from '%s' to '%s'", previous_printer_id.c_str(), new_printer_id.c_str());
 
         // Check if we should connect/reconnect to MQTT
-        if (new_printer_id.empty() || id(username_text).state.empty() || id(mqtt_endpoint_text).state.empty()) {
-          ESP_LOGI("mqtt", "Username, printer ID, or mqtt_endpoint missing, disabling MQTT");
+        if (new_printer_id.empty() || id(username_text).state.empty() || id(mqtt_endpoint_text).state.empty() || id(mqtt_port_text).state.empty()) {
+          ESP_LOGI("mqtt", "Username, printer ID, mqtt_endpoint or mqtt_port missing, disabling MQTT");
           id(clear_printago_status).execute();
           id(mqtt_client_id).disable();
           return;
@@ -458,3 +557,13 @@ button:
   web_server:
     sorting_group_id: printago
     sorting_weight: 4
+
+- platform: template
+  name: "Fetch Printers"
+  id: fetch_printago_printers_button
+  icon: "mdi:printer-search"
+  on_press:
+  - script.execute: fetch_printago_printers
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 5

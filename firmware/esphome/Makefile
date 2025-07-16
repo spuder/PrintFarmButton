@@ -13,7 +13,7 @@ ESPHOME ?= esphome
 ESPHOME_MODE ?= system
 
 ifeq ($(ESPHOME_MODE),podman)
-	ESPHOME_CMD = podman run -it -v $(CURDIR):/data -v $(CURDIR)/.esphome/platformio:/cache esphome/esphome:2025.7.0b1
+	ESPHOME_CMD = podman run -it -v $(CURDIR):/data -v $(CURDIR)/.esphome/platformio:/cache esphome/esphome:2025.7.0
 	YAML_PREFIX = /data/
 else
 	ESPHOME_CMD = $(ESPHOME)

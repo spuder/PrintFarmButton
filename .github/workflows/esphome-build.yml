@@ -12,7 +12,7 @@ permissions:
   checks: write
 
 env:
-  ESPHOME_VERSION: 2025.7.0b3
+  ESPHOME_VERSION: 2025.7.0
 
 jobs:
   build-esp32c3:

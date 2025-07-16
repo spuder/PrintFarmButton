@@ -1,9 +1,8 @@
 mqtt:
   id: mqtt_client_id
-  # broker: ""
   broker: ""
   client_id: ""
-  port: 1883
+  port: 1
   username: ""
   password: ""
   discover_ip: false
@@ -12,8 +11,57 @@ mqtt:
   discovery_prefix:
   use_abbreviations: false
   topic_prefix:
-  log_topic: # skip_cert_cn_check: true
-
+  log_topic: # example.com certificate
+  certificate_authority: |
+    -----BEGIN CERTIFICATE-----
+    MIIDkjCCAxmgAwIBAgISBRyfwwbkZFeUrWDUPC5lJyiTMAoGCCqGSM49BAMDMDIx
+    CzAJBgNVBAYTAlVTMRYwFAYDVQQKEw1MZXQncyBFbmNyeXB0MQswCQYDVQQDEwJF
+    NjAeFw0yNTA1MDkwMjU4MjJaFw0yNTA4MDcwMjU4MjFaMB8xHTAbBgNVBAMTFHJl
+    YWx0aW1lLnByaW50YWdvLmlvMFkwEwYHKoZIzj0CAQYIKoZIzj0DAQcDQgAEPZre
+    kaJzCTXWQek9AaubmmW3yJXj8ZXx6pSO0YfIzCxgivlQiDCnFx+6RuSBUSrWq+4L
+    B71QbfO57uTlUFVk9qOCAiAwggIcMA4GA1UdDwEB/wQEAwIHgDAdBgNVHSUEFjAU
+    BggrBgEFBQcDAQYIKwYBBQUHAwIwDAYDVR0TAQH/BAIwADAdBgNVHQ4EFgQUC77l
+    /osblaIrDpQk5aoV4oA+cp4wHwYDVR0jBBgwFoAUkydGmAOpUWiOmNbEQkjbI79Y
+    lNIwMgYIKwYBBQUHAQEEJjAkMCIGCCsGAQUFBzAChhZodHRwOi8vZTYuaS5sZW5j
+    ci5vcmcvMB8GA1UdEQQYMBaCFHJlYWx0aW1lLnByaW50YWdvLmlvMBMGA1UdIAQM
+    MAowCAYGZ4EMAQIBMC0GA1UdHwQmMCQwIqAgoB6GHGh0dHA6Ly9lNi5jLmxlbmNy
+    Lm9yZy8yMC5jcmwwggECBgorBgEEAdZ5AgQCBIHzBIHwAO4AdQAS8U40vVNyTIQG
+    GcOPP3oT+Oe1YoeInG0wBYTr5YYmOgAAAZazMFkKAAAEAwBGMEQCIGTQfr92dtAM
+    PiOAgX2BZK0cvu8ftW2+DucXECGzy4ZoAiAB5HghCV2Qzo1360GH4xfF4Zou96SM
+    /ucpQ86e7MA2PwB1AA3h8jAr0w3BQGISCepVLvxHdHyx1+kw7w5CHrR+Tqo0AAAB
+    lrMwaJ8AAAQDAEYwRAIgJc27HArDPrEIrWN6xbDIqqQ//PEMqoYsMuKT6H0gTZsC
+    ICNbZnNX5ncgWmikFfYmt6GBFXCUpZlm67sDLuXoEznMMAoGCCqGSM49BAMDA2cA
+    MGQCMDIEZ8NLuxfmceJNtq/5AalxyJMrfkKkHGwnNR+JHtpbkLjY1M3LPHXm+d+k
+    7otfPQIwfo9Wt4O73YuIyT1UhVprP/zvmEbrt9obQ69h0CuB6UwphVf5TVSIUTrx
+    au5yR4mm
+    -----END CERTIFICATE-----
+    -----BEGIN CERTIFICATE-----
+    MIIEVzCCAj+gAwIBAgIRALBXPpFzlydw27SHyzpFKzgwDQYJKoZIhvcNAQELBQAw
+    TzELMAkGA1UEBhMCVVMxKTAnBgNVBAoTIEludGVybmV0IFNlY3VyaXR5IFJlc2Vh
+    cmNoIEdyb3VwMRUwEwYDVQQDEwxJU1JHIFJvb3QgWDEwHhcNMjQwMzEzMDAwMDAw
+    WhcNMjcwMzEyMjM1OTU5WjAyMQswCQYDVQQGEwJVUzEWMBQGA1UEChMNTGV0J3Mg
+    RW5jcnlwdDELMAkGA1UEAxMCRTYwdjAQBgcqhkjOPQIBBgUrgQQAIgNiAATZ8Z5G
+    h/ghcWCoJuuj+rnq2h25EqfUJtlRFLFhfHWWvyILOR/VvtEKRqotPEoJhC6+QJVV
+    6RlAN2Z17TJOdwRJ+HB7wxjnzvdxEP6sdNgA1O1tHHMWMxCcOrLqbGL0vbijgfgw
+    gfUwDgYDVR0PAQH/BAQDAgGGMB0GA1UdJQQWMBQGCCsGAQUFBwMCBggrBgEFBQcD
+    ATASBgNVHRMBAf8ECDAGAQH/AgEAMB0GA1UdDgQWBBSTJ0aYA6lRaI6Y1sRCSNsj
+    v1iU0jAfBgNVHSMEGDAWgBR5tFnme7bl5AFzgAiIyBpY9umbbjAyBggrBgEFBQcB
+    AQQmMCQwIgYIKwYBBQUHMAKGFmh0dHA6Ly94MS5pLmxlbmNyLm9yZy8wEwYDVR0g
+    BAwwCjAIBgZngQwBAgEwJwYDVR0fBCAwHjAcoBqgGIYWaHR0cDovL3gxLmMubGVu
+    Y3Iub3JnLzANBgkqhkiG9w0BAQsFAAOCAgEAfYt7SiA1sgWGCIpunk46r4AExIRc
+    MxkKgUhNlrrv1B21hOaXN/5miE+LOTbrcmU/M9yvC6MVY730GNFoL8IhJ8j8vrOL
+    pMY22OP6baS1k9YMrtDTlwJHoGby04ThTUeBDksS9RiuHvicZqBedQdIF65pZuhp
+    eDcGBcLiYasQr/EO5gxxtLyTmgsHSOVSBcFOn9lgv7LECPq9i7mfH3mpxgrRKSxH
+    pOoZ0KXMcB+hHuvlklHntvcI0mMMQ0mhYj6qtMFStkF1RpCG3IPdIwpVCQqu8GV7
+    s8ubknRzs+3C/Bm19RFOoiPpDkwvyNfvmQ14XkyqqKK5oZ8zhD32kFRQkxa8uZSu
+    h4aTImFxknu39waBxIRXE4jKxlAmQc4QjFZoq1KmQqQg0J/1JF8RlFvJas1VcjLv
+    YlvUB2t6npO6oQjB3l+PNf0DpQH7iUx3Wz5AjQCi6L25FjyE06q6BZ/QlmtYdl/8
+    ZYao4SRqPEs/6cAiF+Qf5zg2UkaWtDphl1LKMuTNLotvsX99HP69V2faNyegodQ0
+    LyTApr/vT01YPE46vNsDLgK+4cL6TrzC/a4WcmF5SRJ938zrv/duJHLXQIku5v0+
+    EwOy59Hdm0PT/Er/84dDV0CSjdR/2XuZM3kpysSKLgD1cKiDA+IRguODCxfO9cyY
+    Ig46v9mFmBvyH04=
+    -----END CERTIFICATE-----
+  skip_cert_cn_check: true # wait_for_connection: false
   clean_session: true
   enable_on_boot: false # Don't auto-connect, we'll connect manually when ready
   birth_message:
@@ -29,9 +77,9 @@ mqtt:
     then:
     - light.turn_on:
         id: printfarmbutton_rgb
-        red: 1.0
-        green: 1.0
-        blue: 1.0
+        red: 0.9
+        green: 0.9
+        blue: 0.9
         effect: None
 
 binary_sensor:
@@ -57,10 +105,28 @@ text:
   web_server:
     sorting_group_id: printago
     sorting_weight: 6
-  initial_value: "mqtt.example.com"
+  initial_value: "realtime.printago.io"
   icon: "mdi:lan"
   on_value:
     then:
     - lambda: |-
         ESP_LOGI("mqtt", "MQTT Endpoint changed to: %s", x.c_str());
         id(mqtt_client_id).set_broker_address(x.c_str());
+
+- platform: template
+  name: "MQTT Port"
+  id: mqtt_port_text
+  mode: text
+  restore_value: true
+  optimistic: true
+  state_topic:
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 8
+  initial_value: "8883"
+  icon: "mdi:lan"
+  on_value:
+    then:
+    - lambda: |-
+        ESP_LOGI("mqtt", "MQTT Port changed to: %s", x.c_str());
+        id(mqtt_client_id).set_broker_port(atoi(x.c_str()));
