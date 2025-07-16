@@ -101,7 +101,7 @@ script:
                 ESP_LOGI("printago", "HTTP Response code: %d", response->status_code);
                 ESP_LOGI("printago", "Response body length: %d bytes", body.length());
                 if (response->status_code == 200) {
-                  DynamicJsonDocument doc(2048);
+                  JsonDocument doc;
                   DeserializationError error = deserializeJson(doc, body);
                   if (error) {
                     ESP_LOGW("printago", "Failed to parse JSON: %s", error.c_str());
@@ -112,7 +112,7 @@ script:
                   bool is_online = doc["isOnline"] | false;
                   
                   // Extract and set printer name from metadata if available
-                  if (doc.containsKey("metadata") && doc["metadata"].containsKey("name")) {
+                  if (!doc["metadata"].isNull() && !doc["metadata"]["name"].isNull()) {
                     const char* name = doc["metadata"]["name"].as<const char*>();
                     if (name != nullptr) {
                       ESP_LOGI("printago", "Set printer name to: %s", name);
@@ -312,7 +312,7 @@ script:
                 ESP_LOGI("printago", "Fetch printers response: %d", response->status_code);
                 if (response->status_code == 200) {
                   ESP_LOGI("printago", "Response body length: %d bytes", body.length());
-                  DynamicJsonDocument doc(8192);
+                  JsonDocument doc;
                   DeserializationError error = deserializeJson(doc, body);
                   
                   if (!error && doc.is<JsonArray>()) {
@@ -487,13 +487,13 @@ text:
           ESP_LOGV("mqtt", "Received JSON on stats topic");
           
           // Handle basic status - simple approach
-          id(printer_is_online_sensor).publish_state(root.containsKey("isOnline") ? (bool)root["isOnline"] : false);
-          id(printer_is_available_sensor).publish_state(root.containsKey("isAvailable") ? (bool)root["isAvailable"] : false);
+          id(printer_is_online_sensor).publish_state(!root["isOnline"].isNull() ? (bool)root["isOnline"] : false);
+          id(printer_is_available_sensor).publish_state(!root["isAvailable"].isNull() ? (bool)root["isAvailable"] : false);
           
           // Handle printer name
-          if (root.containsKey("metadata")) {
+          if (!root["metadata"].isNull()) {
             JsonObject metadata = root["metadata"];
-            if (metadata.containsKey("name")) {
+            if (!metadata["name"].isNull()) {
               const char* name = metadata["name"];
               if (name != nullptr) {
                 id(printer_name).publish_state(name);
@@ -504,14 +504,14 @@ text:
           // Handle health status
           bool error_state = false;
           bool warning_state = false;
-          if (root.containsKey("data")) {
+          if (!root["data"].isNull()) {
             JsonObject data = root["data"];
-            if (data.containsKey("health")) {
+            if (!data["health"].isNull()) {
               JsonObject health = data["health"];
-              if (health.containsKey("errors") && health["errors"].is<JsonArray>() && health["errors"].size() > 0) {
+              if (!health["errors"].isNull() && health["errors"].is<JsonArray>() && health["errors"].size() > 0) {
                 error_state = true;
               }
-              if (health.containsKey("warnings") && health["warnings"].is<JsonArray>() && health["warnings"].size() > 0) {
+              if (!health["warnings"].isNull() && health["warnings"].is<JsonArray>() && health["warnings"].size() > 0) {
                 warning_state = true;
               }
             }
@@ -521,7 +521,7 @@ text:
 
           // Handle downloading state
           bool download_state = false;
-          if (root.containsKey("state")) {
+          if (!root["state"].isNull()) {
             const char* state = root["state"];
             if (state != nullptr && strcmp(state, "PREPARE") == 0) {
               download_state = true;
@@ -536,11 +536,11 @@ text:
 
         id(mqtt_client_id).subscribe_json(entities_topic, [new_printer_id](const std::string &topic, JsonObject root) {
           bool ready_state = false;
-          if (root.containsKey("entities")) {
+          if (!root["entities"].isNull()) {
             JsonObject entities = root["entities"];
-            if (entities.containsKey(new_printer_id.c_str())) {
+            if (!entities[new_printer_id.c_str()].isNull()) {
               JsonObject printer_obj = entities[new_printer_id.c_str()];
-              if (printer_obj.containsKey("confirmedReady")) {
+              if (!printer_obj["confirmedReady"].isNull()) {
                 ready_state = (bool)printer_obj["confirmedReady"];
               }
             }

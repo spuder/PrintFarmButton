@@ -77,8 +77,6 @@ text_sensor:
   name: "Installed Version"
   id: printfarmbutton_version
   state_topic:
-  lambda: |-
-    return std::string(ESPHOME_PROJECT_VERSION);
   icon: mdi:new-box
   web_server:
     sorting_group_id: updates

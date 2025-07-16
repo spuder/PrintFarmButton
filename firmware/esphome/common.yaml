@@ -12,6 +12,10 @@ esphome:
         id: printfarmbutton_rgb
         effect: Rainbow
     - delay: 3s
+    - lambda: |-
+        // Set version once at boot
+        id(printfarmbutton_version).publish_state("${version}");
+        ESP_LOGI("version", "Set installed version to: ${version}");
 
 packages:
   led: !include conf.d/led.yaml
