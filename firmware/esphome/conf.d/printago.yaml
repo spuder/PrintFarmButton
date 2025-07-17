@@ -589,7 +589,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
-    sorting_weight: 9
+    sorting_weight: 1
   on_value:
     then:
     - lambda: |-
