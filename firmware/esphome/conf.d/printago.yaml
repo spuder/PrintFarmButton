@@ -259,9 +259,17 @@ script:
             return "https://api.printago.io/v1/printers/confirm-ready";
           request_headers:
             authorization: !lambda |-
-              return ("ApiKey " + id(api_key_text).state).c_str();
+              static std::string key;
+              std::string raw_key = id(api_key_text).state;
+              raw_key.erase(std::remove_if(raw_key.begin(), raw_key.end(), ::isspace), raw_key.end());
+              key = "ApiKey " + raw_key;
+              return key.c_str();
             x-printago-storeid: !lambda |-
-              return id(username_text).state.c_str();
+              static std::string store;
+              std::string raw_store = id(username_text).state;
+              raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
+              store = raw_store;
+              return store.c_str();
             content-type: application/json
           body: !lambda |-
             return std::string("{\"ready\": true, \"ids\": [\"") + id(printer_id).state + "\"]}";
