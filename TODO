@@ -25,3 +25,4 @@
 [x] Fix content length 0 in curl commands on webpage
 [x] Should curl auto enable updaates? 
 [ ] Auto-fetch printer list on boot when credentials are available
+[ ] Fix offline printers showing as green when they should be red
