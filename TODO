@@ -24,3 +24,4 @@
 [ ] Press and hold button to mark print as failed
 [x] Fix content length 0 in curl commands on webpage
 [x] Should curl auto enable updaates? 
+[ ] Auto-fetch printer list on boot when credentials are available

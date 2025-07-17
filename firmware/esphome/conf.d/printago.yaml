@@ -587,6 +587,7 @@ text:
   restore_value: true
   optimistic: true
   state_topic:
+  internal: true
   web_server:
     sorting_group_id: printago
     sorting_weight: 1
@@ -820,7 +821,7 @@ button:
     sorting_weight: 11
 
 - platform: template
-  name: "Fetch Printers (Refresh page to view changes)"
+  name: "Fetch Printers (Refresh page)"
   id: fetch_printago_printers_button
   icon: "mdi:printer-search"
   on_press:
