@@ -89,7 +89,7 @@ binary_sensor:
   device_class: connectivity
   web_server:
     sorting_group_id: printago
-    sorting_weight: 7
+    sorting_weight: 1
   icon: "mdi:cloud-check-variant-outline"
   lambda: |-
     return id(mqtt_client_id)->is_connected();
@@ -104,7 +104,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
-    sorting_weight: 6
+    sorting_weight: 2
   initial_value: "realtime.printago.io"
   icon: "mdi:lan"
   on_value:
@@ -122,7 +122,7 @@ text:
   state_topic:
   web_server:
     sorting_group_id: printago
-    sorting_weight: 8
+    sorting_weight: 3
   initial_value: "8883"
   icon: "mdi:lan"
   on_value:

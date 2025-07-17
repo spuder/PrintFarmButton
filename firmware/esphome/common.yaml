@@ -58,3 +58,11 @@ api:
 #     ref: 2025.7.0b1/mqtt-chunking
 #   components: [ mqtt ]
 #   refresh: 0s
+
+external_components:
+- source:
+    type: git
+    url: https://github.com/spuder/esphome
+    ref: template_select_options
+  components: [ template ]
+  refresh: 0s
