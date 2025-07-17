@@ -66,6 +66,14 @@ binary_sensor:
     - script.execute: update_led_color
 
 script:
+- id: clear_printer_selection
+  mode: queued
+  then:
+  - lambda: |-
+      ESP_LOGI("printago", "Clearing printer selection");
+      id(printer_id).publish_state("");
+      id(printer_name).publish_state("");
+
 - id: check_printago_status
   mode: queued
   then:
@@ -297,6 +305,11 @@ script:
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(username_text).state.empty();'
       then:
+      # Show loading state
+      - lambda: |-
+          ESP_LOGI("printago", "Starting printer fetch...");
+          // Update display to show loading state
+          id(available_printers_display).publish_state("Loading printers...");
       - http_request.get:
           url: "https://api.printago.io/v1/printers"
           request_headers:
@@ -327,23 +340,99 @@ script:
                     JsonArray printers = doc.as<JsonArray>();
                     ESP_LOGI("printago", "Found %d printers", printers.size());
                     
+                    // Clear the global vectors
+                    id(printago_printer_ids).clear();
+                    id(printago_printer_names).clear();
+                    
+                    // Create temporary vectors to collect and sort printers
+                    std::vector<std::pair<std::string, std::string>> printer_pairs;
+                    
                     for (JsonVariant printer : printers) {
                       if (printer.is<JsonObject>()) {
                         JsonObject printerObj = printer.as<JsonObject>();
-                        const char* id = printerObj["id"] | "unknown";
+                        const char* printer_id = printerObj["id"] | "unknown";
                         const char* name = printerObj["name"] | "unnamed";
-                        ESP_LOGI("printago", "Printer: %s (%s)", name, id);
+                        ESP_LOGI("printago", "Printer: %s (%s)", name, printer_id);
+                        
+                        // Add to temporary pairs if not "unknown"
+                        if (strcmp(printer_id, "unknown") != 0) {
+                          printer_pairs.push_back(std::make_pair(std::string(name), std::string(printer_id)));
+                        }
                       }
                     }
+                    
+                    // Sort printers alphabetically by name (case-insensitive)
+                    std::sort(printer_pairs.begin(), printer_pairs.end(), 
+                      [](const std::pair<std::string, std::string>& a, const std::pair<std::string, std::string>& b) {
+                        std::string name_a = a.first;
+                        std::string name_b = b.first;
+                        std::transform(name_a.begin(), name_a.end(), name_a.begin(), ::tolower);
+                        std::transform(name_b.begin(), name_b.end(), name_b.begin(), ::tolower);
+                        return name_a < name_b;
+                      });
+                    
+                    // Populate the global vectors with sorted data
+                    for (const auto& pair : printer_pairs) {
+                      id(printago_printer_names).push_back(pair.first);   // name
+                      id(printago_printer_ids).push_back(pair.second);    // id
+                      ESP_LOGI("printago", "Sorted printer: %s (%s)", pair.first.c_str(), pair.second.c_str());
+                    }
+                    
+                    ESP_LOGI("printago", "Stored %d sorted printers in global vectors", id(printago_printer_ids).size());
+                    
+                    // Auto-select first printer if only one is available and none is currently selected
+                    if (id(printago_printer_ids).size() == 1 && id(printer_id).state.empty()) {
+                      std::string first_id = id(printago_printer_ids)[0];
+                      std::string first_name = id(printago_printer_names)[0];
+                      ESP_LOGI("printago", "Auto-selecting single printer: %s (%s)", first_name.c_str(), first_id.c_str());
+                      id(printer_id).publish_state(first_id);
+                    } else if (id(printago_printer_ids).size() == 0) {
+                      // Clear selection if no printers found
+                      id(clear_printer_selection).execute();
+                    }
+                    
+                    // Update all components
+                    id(available_printers_display).update();
+                    id(update_printer_select_options).execute();
                   } else {
                     ESP_LOGW("printago", "Failed to parse JSON response");
+                    // Show error state
+                    id(available_printers_display).publish_state("Error loading printers");
                   }
                 } else {
                   ESP_LOGW("printago", "HTTP error %d", response->status_code);
+                  // Show error state
+                  id(available_printers_display).publish_state("Error: HTTP " + std::to_string(response->status_code));
                 }
       else:
       - lambda: |-
           ESP_LOGW("printago", "Not running fetch_printago_printers: api_key_text or username_text is missing");
+          // Clear vectors and update dropdown when fetch fails
+          id(printago_printer_ids).clear();
+          id(printago_printer_names).clear();
+          id(available_printers_display).update();
+      - script.execute: clear_printer_selection
+      - script.execute: update_printer_select_options
+
+- id: update_printer_select_options
+  mode: queued
+  then:
+  - lambda: |-
+      // Log the current printer options for debugging
+      ESP_LOGI("printago", "Available printers:");
+      auto& names = id(printago_printer_names);
+      auto& ids = id(printago_printer_ids);
+
+      if (names.empty()) {
+        ESP_LOGI("printago", "  No printers available");
+      } else {
+        for (size_t i = 0; i < names.size() && i < ids.size(); i++) {
+          ESP_LOGI("printago", "  %d: %s (%s)", (int)i+1, names[i].c_str(), ids[i].c_str());
+        }
+      }
+
+      // Force update the select component display
+      id(printer_select).update();
 
 text_sensor:
 - platform: template
@@ -399,6 +488,41 @@ text_sensor:
     - lambda: |-
         ESP_LOGI("mqtt", "Client ID value updated to: %s", x.c_str());
 
+- platform: template
+  name: "Available Printers"
+  id: available_printers_display
+  icon: "mdi:printer-search"
+  state_topic:
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 2.5
+  lambda: |-
+    // Enhanced display with count and formatted list including current selection
+    std::string printer_list = "";
+    auto& names = id(printago_printer_names);
+    auto& ids = id(printago_printer_ids);
+    std::string current_id = id(printer_id).state;
+
+    if (names.empty()) {
+      return std::string("No printers found");
+    }
+
+    // Add count prefix
+    printer_list = std::to_string(names.size()) + " printer" + (names.size() == 1 ? "" : "s") + ": ";
+
+    for (size_t i = 0; i < names.size() && i < ids.size(); i++) {
+      if (i > 0) printer_list += ", ";
+      
+      // Add visual indicator for currently selected printer
+      if (ids[i] == current_id) {
+        printer_list += "✓ " + std::to_string(i + 1) + ". " + names[i];
+      } else {
+        printer_list += std::to_string(i + 1) + ". " + names[i];
+      }
+    }
+
+    return printer_list;
+
 text:
 - platform: template
   name: "Api Key" #This name is the key for the rest api, do not change
@@ -417,6 +541,10 @@ text:
         ESP_LOGI("mqtt", "API Key changed, updating MQTT client ID");
         // Trigger client ID generation
         id(mqtt_client_id).set_password(x.c_str());
+        // Refresh printer list when API key changes
+        if (!x.empty() && !id(username_text).state.empty()) {
+          id(fetch_printago_printers).execute();
+        }
 
 - platform: template
   name: "Username" #This name is the key for the rest api, do not change
@@ -435,6 +563,10 @@ text:
         ESP_LOGI("mqtt", "Username changed to: %s", x.c_str());
         // Trigger client ID generation
         id(mqtt_client_id_stored).update();
+        // Refresh printer list when username changes
+        if (!x.empty() && !id(api_key_text).state.empty()) {
+          id(fetch_printago_printers).execute();
+        }
 
 - platform: template
   id: printer_id_previous
@@ -555,6 +687,153 @@ text:
           }
           id(printer_confirmed_ready_sensor).publish_state(ready_state);
         });
+select:
+- platform: template
+  name: "Select Printer"
+  id: printer_select
+  icon: "mdi:printer-search"
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 2.8
+  # Enhanced static options with more intuitive naming
+  options:
+  - "No printers available"
+  - "🔄 Refresh printer list"
+  - "Printer 1"
+  - "Printer 2"
+  - "Printer 3"
+  - "Printer 4"
+  - "Printer 5"
+  - "Printer 6"
+  - "Printer 7"
+  - "Printer 8"
+  - "Printer 9"
+  - "Printer 10"
+  lambda: |-
+    // Return one of the valid static options based on current state
+    auto& names = id(printago_printer_names);
+    auto& ids = id(printago_printer_ids);
+    std::string current_id = id(printer_id).state;
+
+    // If no printers are available
+    if (names.empty()) {
+      return std::string("No printers available");
+    }
+
+    // Find the index for the current ID and return the corresponding "Printer X" option
+    for (size_t i = 0; i < names.size() && i < ids.size(); i++) {
+      if (ids[i] == current_id) {
+        // Return the corresponding "Printer X" option
+        return std::string("Printer ") + std::to_string(i + 1);
+      }
+    }
+
+    // If we have printers but current_id doesn't match any, return first printer option
+    if (!names.empty()) {
+      return std::string("Printer 1");
+    }
+
+    // Fallback
+    return std::string("No printers available");
+
+  set_action:
+    then:
+    - lambda: |-
+        ESP_LOGI("printago", "Printer selected from dropdown: %s", x.c_str());
+
+        auto& names = id(printago_printer_names);
+        auto& ids = id(printago_printer_ids);
+
+        // Handle special cases
+        if (x == "No printers available") {
+          ESP_LOGW("printago", "No printers available to select");
+          return;
+        }
+
+        if (x == "🔄 Refresh printer list") {
+          ESP_LOGI("printago", "Refreshing printer list...");
+          id(fetch_printago_printers).execute();
+          return;
+        }
+
+        // Check if it's a placeholder option (Printer 1, Printer 2, etc.)
+        if (x.find("Printer ") == 0) {
+          // Extract the number from "Printer X"
+          std::string num_str = x.substr(8); // Skip "Printer "
+          int printer_num = std::stoi(num_str);
+          int index = printer_num - 1; // Convert to 0-based index
+          
+          if (index >= 0 && index < names.size() && index < ids.size()) {
+            std::string selected_id = ids[index];
+            std::string selected_name = names[index];
+            ESP_LOGI("printago", "Selected printer %d: %s (ID: %s)", printer_num, selected_name.c_str(), selected_id.c_str());
+            id(printer_id).publish_state(selected_id);
+          } else {
+            ESP_LOGW("printago", "Invalid printer number: %d (only %d printers available)", printer_num, (int)names.size());
+          }
+          return;
+        }
+
+        // Check if it's a real printer name (fallback for direct name matches)
+        bool is_valid = false;
+        std::string selected_id = "";
+        for (size_t i = 0; i < names.size() && i < ids.size(); i++) {
+          if (names[i] == x || (x.find(names[i]) != std::string::npos)) {
+            selected_id = ids[i];
+            is_valid = true;
+            break;
+          }
+        }
+
+        if (is_valid) {
+          ESP_LOGI("printago", "Valid selection: %s (ID: %s)", x.c_str(), selected_id.c_str());
+          id(printer_id).publish_state(selected_id);
+        } else {
+          ESP_LOGW("printago", "Invalid selection: %s", x.c_str());
+        }
+number:
+- platform: template
+  name: "Select Printer by Index"
+  id: printer_select_number
+  icon: "mdi:printer-search"
+  web_server:
+    sorting_group_id: printago
+    sorting_weight: 2.9
+  min_value: 1
+  max_value: 10
+  step: 1
+  mode: box
+  lambda: |-
+    // Return current selection index (1-based)
+    auto& ids = id(printago_printer_ids);
+    if (ids.empty()) {
+      return 0.0;
+    }
+
+    // Find current printer_id in the vector and return its 1-based index
+    std::string current_id = id(printer_id).state;
+    for (size_t i = 0; i < ids.size(); i++) {
+      if (ids[i] == current_id) {
+        return (float)(i + 1);
+      }
+    }
+
+    return 1.0; // Default to first printer if not found
+  set_action:
+    then:
+    - lambda: |-
+        auto& ids = id(printago_printer_ids);
+        int index = (int)x - 1; // Convert to 0-based index
+
+        if (index >= 0 && index < ids.size()) {
+          std::string selected_id = ids[index];
+          ESP_LOGI("printago", "Printer selected by index %d: %s", index + 1, selected_id.c_str());
+          // Update the printer_id text field with the selected value
+          id(printer_id).publish_state(selected_id);
+        } else {
+          ESP_LOGW("printago", "Invalid printer index: %d", index + 1);
+        }
+
 button:
 - platform: template
   name: "Check Printago Status"
@@ -575,3 +854,12 @@ button:
   web_server:
     sorting_group_id: printago
     sorting_weight: 5
+
+globals:
+- id: printago_printer_ids
+  type: std::vector<std::string>
+  restore_value: false
+
+- id: printago_printer_names
+  type: std::vector<std::string>
+  restore_value: false
