@@ -369,7 +369,7 @@
         <div style="margin-bottom:1.5em;text-align:left;max-width:350px;margin-left:auto;margin-right:auto;">
           <ol style="padding-left:1.2em;">
             <li>Navigate to <code>http://printfarmbutton-xxxxxx.local</code> (where <code>xxxxxx</code> is the last 6 of the MAC address)</li>
-            <li>Enter Username & API Key</li>
+            <li>Enter Store ID & API Key</li>
             <li>Press 'Fetch Printers'</li>
             <li>Refresh the page</li>
             <li>Select your printer from the list</li>
@@ -569,7 +569,7 @@ function getCurlCommands() {
   const printerSelect = document.getElementById('printer-select');
   const esp32Host = esp32Name ? `${esp32Name}.local` : '<esp32>.local';
   return [
-    `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/username/set?value=${storeId}"`,
+    `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/store_id/set?value=${storeId}"`,
     `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/api_key/set?value=${apiKey}"`,
     `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/printer_id/set?value=${printerSelect?.value || ''}"`,
     `curl -X POST -H "Content-Length: 0" "http://${esp32Host}/text/mqtt_endpoint/set?value=${mqttEndpoint}"`

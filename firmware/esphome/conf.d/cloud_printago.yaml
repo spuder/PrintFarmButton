@@ -82,7 +82,7 @@ script:
         and:
         - lambda: 'return !id(printer_id).state.empty();'
         - lambda: 'return !id(api_key_text).state.empty();'
-        - lambda: 'return !id(username_text).state.empty();'
+        - lambda: 'return !id(storeid_text).state.empty();'
         - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
       then:
       - http_request.get:
@@ -97,7 +97,7 @@ script:
               return key.c_str();
             x-printago-storeid: !lambda |-
               static std::string store;
-              std::string raw_store = id(username_text).state;
+              std::string raw_store = id(storeid_text).state;
               raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
               store = raw_store;
               return store.c_str();
@@ -136,7 +136,7 @@ script:
                 }
       else:
       - lambda: |-
-          ESP_LOGW("printago", "Not running check_printago_status: printer_id, api_key_text, or username_text is missing");
+          ESP_LOGW("printago", "Not running check_printago_status: printer_id, api_key_text, or storeid_text is missing");
 
 - id: clear_printago_status
   mode: queued
@@ -255,7 +255,7 @@ script:
         and:
         - lambda: 'return !id(printer_id).state.empty();'
         - lambda: 'return !id(api_key_text).state.empty();'
-        - lambda: 'return !id(username_text).state.empty();'
+        - lambda: 'return !id(storeid_text).state.empty();'
         - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
         - lambda: 'return !id(mqtt_port_text).state.empty();'
         - lambda: 'return !id(printer_confirmed_ready_sensor).state;'
@@ -274,7 +274,7 @@ script:
               return key.c_str();
             x-printago-storeid: !lambda |-
               static std::string store;
-              std::string raw_store = id(username_text).state;
+              std::string raw_store = id(storeid_text).state;
               raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
               store = raw_store;
               return store.c_str();
@@ -303,7 +303,7 @@ script:
       condition:
         and:
         - lambda: 'return !id(api_key_text).state.empty();'
-        - lambda: 'return !id(username_text).state.empty();'
+        - lambda: 'return !id(storeid_text).state.empty();'
       then:
       # Show loading state
       - lambda: |-
@@ -321,7 +321,7 @@ script:
               return key.c_str();
             x-printago-storeid: !lambda |-
               static std::string store;
-              std::string raw_store = id(username_text).state;
+              std::string raw_store = id(storeid_text).state;
               raw_store.erase(std::remove_if(raw_store.begin(), raw_store.end(), ::isspace), raw_store.end());
               store = raw_store;
               return store.c_str();
@@ -409,7 +409,7 @@ script:
                 }
       else:
       - lambda: |-
-          ESP_LOGW("printago", "Not running fetch_printago_printers: api_key_text or username_text is missing");
+          ESP_LOGW("printago", "Not running fetch_printago_printers: api_key_text or storeid_text is missing");
           // Clear vectors and update dropdown when fetch fails
           id(printago_printer_ids).clear();
           id(printago_printer_names).clear();
@@ -461,7 +461,7 @@ text_sensor:
     sorting_weight: 10
   icon: "mdi:identifier"
   lambda: |-
-    std::string username = id(username_text).state;
+    std::string username = id(storeid_text).state;
 
     // Clean username
     username.erase(std::remove_if(username.begin(), username.end(), ::isspace), username.end());
@@ -546,13 +546,13 @@ text:
         // Trigger client ID generation
         id(mqtt_client_id).set_password(x.c_str());
         // Refresh printer list when API key changes
-        if (!x.empty() && !id(username_text).state.empty()) {
+        if (!x.empty() && !id(storeid_text).state.empty()) {
           id(fetch_printago_printers).execute();
         }
 
 - platform: template
-  name: "Username" #This name is the key for the rest api, do not change
-  id: username_text
+  name: "Store ID" #This name is the key for the rest api, do not change
+  id: storeid_text
   mode: text
   restore_value: true
   optimistic: true
@@ -564,10 +564,10 @@ text:
   on_value:
     then:
     - lambda: |-
-        ESP_LOGI("mqtt", "Username changed to: %s", x.c_str());
+        ESP_LOGI("mqtt", "Store ID changed to: %s", x.c_str());
         // Trigger client ID generation
         id(mqtt_client_id_stored).update();
-        // Refresh printer list when username changes
+        // Refresh printer list when Store ID changes
         if (!x.empty() && !id(api_key_text).state.empty()) {
           id(fetch_printago_printers).execute();
         }
@@ -600,7 +600,7 @@ text:
         ESP_LOGI("mqtt", "Printer ID changing from '%s' to '%s'", previous_printer_id.c_str(), new_printer_id.c_str());
 
         // Check if we should connect/reconnect to MQTT
-        if (new_printer_id.empty() || id(username_text).state.empty() || id(mqtt_endpoint_text).state.empty() || id(mqtt_port_text).state.empty()) {
+        if (new_printer_id.empty() || id(storeid_text).state.empty() || id(mqtt_endpoint_text).state.empty() || id(mqtt_port_text).state.empty()) {
           ESP_LOGI("mqtt", "Username, printer ID, mqtt_endpoint or mqtt_port missing, disabling MQTT");
           id(clear_printago_status).execute();
           id(mqtt_client_id).disable();
@@ -613,9 +613,9 @@ text:
         id(mqtt_client_id).enable();
 
         // Unsubscribe from previous topics
-        if (!previous_printer_id.empty() && !id(username_text).state.empty()) {
-          std::string old_topic = "stores/" + id(username_text).state + "/printer-stats/" + previous_printer_id;
-          std::string alt_old_topic = "stores/" + id(username_text).state + "/entities/printers/" + previous_printer_id;
+        if (!previous_printer_id.empty() && !id(storeid_text).state.empty()) {
+          std::string old_topic = "stores/" + id(storeid_text).state + "/printer-stats/" + previous_printer_id;
+          std::string alt_old_topic = "stores/" + id(storeid_text).state + "/entities/printers/" + previous_printer_id;
           ESP_LOGI("mqtt", "Unsubscribing from previous topics");
           id(mqtt_client_id).unsubscribe(old_topic);
           id(mqtt_client_id).unsubscribe(alt_old_topic);
@@ -625,7 +625,7 @@ text:
         id(printer_id_previous).publish_state(new_printer_id);
 
         // Subscribe to printer stats topic
-        std::string stats_topic = "stores/" + id(username_text).state + "/printer-stats/" + new_printer_id;
+        std::string stats_topic = "stores/" + id(storeid_text).state + "/printer-stats/" + new_printer_id;
         ESP_LOGI("mqtt", "Subscribing to topic: %s", stats_topic.c_str());
 
         id(mqtt_client_id).subscribe_json(stats_topic, [](const std::string &topic, JsonObject root) {
@@ -676,7 +676,7 @@ text:
         });
 
         // Subscribe to entities topic for confirmedReady
-        std::string entities_topic = "stores/" + id(username_text).state + "/entities/printers";
+        std::string entities_topic = "stores/" + id(storeid_text).state + "/entities/printers";
         ESP_LOGI("mqtt", "Subscribing to entities topic: %s", entities_topic.c_str());
 
         id(mqtt_client_id).subscribe_json(entities_topic, [new_printer_id](const std::string &topic, JsonObject root) {
