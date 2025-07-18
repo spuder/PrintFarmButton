@@ -1,0 +1,26 @@
+globals:
+- id: last_cloud_state
+  type: std::string
+  restore_value: yes
+
+select:
+- platform: template
+  name: "Cloud Connection"
+  id: cloud_connection
+  optimistic: true
+  options:
+  # - "Bambu"
+  - "Printago"
+  initial_option: "Printago"
+  restore_value: true
+  icon: "mdi:chip"
+  web_server:
+    sorting_group_id: cloud
+  state_topic:
+    # on_value:
+    #   then:
+    #   - text_sensor.template.publish:
+    #       id: bambu_status_text
+    #       state: "UNKNOWN"
+    #   - script.execute: connect_mqtt
+    #   - script.execute: check_printago_status

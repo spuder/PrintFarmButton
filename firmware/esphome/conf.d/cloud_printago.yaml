@@ -768,46 +768,46 @@ select:
         }
 
         ESP_LOGW("printago", "Unhandled selection: %s", x.c_str());
-number:
-- platform: template
-  name: "Select Printer by Index"
-  id: printer_select_number
-  icon: "mdi:printer-search"
-  internal: true
-  min_value: 1
-  max_value: 10
-  step: 1
-  mode: box
-  lambda: |-
-    // Return current selection index (1-based)
-    auto& ids = id(printago_printer_ids);
-    if (ids.empty()) {
-      return 0.0;
-    }
+# number:
+# - platform: template
+#   name: "Select Printer by Index"
+#   id: printer_select_number
+#   icon: "mdi:printer-search"
+#   internal: true
+#   min_value: 1
+#   max_value: 10
+#   step: 1
+#   mode: box
+#   lambda: |-
+#     // Return current selection index (1-based)
+#     auto& ids = id(printago_printer_ids);
+#     if (ids.empty()) {
+#       return 0.0;
+#     }
 
-    // Find current printer_id in the vector and return its 1-based index
-    std::string current_id = id(printer_id).state;
-    for (size_t i = 0; i < ids.size(); i++) {
-      if (ids[i] == current_id) {
-        return (float)(i + 1);
-      }
-    }
+#     // Find current printer_id in the vector and return its 1-based index
+#     std::string current_id = id(printer_id).state;
+#     for (size_t i = 0; i < ids.size(); i++) {
+#       if (ids[i] == current_id) {
+#         return (float)(i + 1);
+#       }
+#     }
 
-    return 1.0; // Default to first printer if not found
-  set_action:
-    then:
-    - lambda: |-
-        auto& ids = id(printago_printer_ids);
-        int index = (int)x - 1; // Convert to 0-based index
+#     return 1.0; // Default to first printer if not found
+#   set_action:
+#     then:
+#     - lambda: |-
+#         auto& ids = id(printago_printer_ids);
+#         int index = (int)x - 1; // Convert to 0-based index
 
-        if (index >= 0 && index < ids.size()) {
-          std::string selected_id = ids[index];
-          ESP_LOGI("printago", "Printer selected by index %d: %s", index + 1, selected_id.c_str());
-          // Update the printer_id text field with the selected value
-          id(printer_id).publish_state(selected_id);
-        } else {
-          ESP_LOGW("printago", "Invalid printer index: %d", index + 1);
-        }
+#         if (index >= 0 && index < ids.size()) {
+#           std::string selected_id = ids[index];
+#           ESP_LOGI("printago", "Printer selected by index %d: %s", index + 1, selected_id.c_str());
+#           // Update the printer_id text field with the selected value
+#           id(printer_id).publish_state(selected_id);
+#         } else {
+#           ESP_LOGW("printago", "Invalid printer index: %d", index + 1);
+#         }
 
 button:
 - platform: template

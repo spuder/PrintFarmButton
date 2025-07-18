@@ -20,10 +20,12 @@ esphome:
 packages:
   led: !include conf.d/led.yaml
   web_server: !include conf.d/web_server.yaml
+  cloud: !include conf.d/cloud.yaml
+  cloud_printago: !include conf.d/cloud_printago.yaml
   mqtt: !include conf.d/mqtt.yaml
+  mqtt_printago: !include conf.d/mqtt_printago.yaml
   button: !include conf.d/button.yaml
   wifi: !include conf.d/wifi.yaml
-  printago: !include conf.d/printago.yaml
   update: !include conf.d/update.yaml
   version: !include conf.d/version.yaml
 logger:
@@ -46,18 +48,6 @@ improv_serial:
 
 api:
   reboot_timeout: 0s
-
-# TODO: Remove once crashing is fixed
-# https://discord.com/channels/429907082951524364/1390941483150082161/1391308828414578688
-# https://github.com/esphome/esphome/pull/5786
-# external_components:
-# - source:
-#     type: git
-#     url: https://github.com/spuder/esphome
-#     # ref: 2025.6.3/mqtt-chunking
-#     ref: 2025.7.0b1/mqtt-chunking
-#   components: [ mqtt ]
-#   refresh: 0s
 
 external_components:
 - source:
