@@ -11,4 +11,5 @@ esp32:
     type: esp-idf
 packages:
   common: !include common.yaml
+  button: !include conf.d/button.yaml
   button_internal: !include conf.d/button_internal.yaml

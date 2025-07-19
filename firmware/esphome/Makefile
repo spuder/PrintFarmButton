@@ -1,3 +1,10 @@
+# M5Stack ATOM Matrix builds
+build-matrix:
+	$(ESPHOME_CMD) compile $(YAML_PREFIX)atom-matrix.yaml
+
+run-matrix:
+	$(ESPHOME_CMD) run $(YAML_PREFIX)atom-matrix.yaml
+
 # ESPHome PrintFarmButton Makefile
 #
 # Usage:
@@ -20,7 +27,7 @@ else
 	YAML_PREFIX =
 endif
 
-.PHONY: clean build-s3-mini run-s3-mini build-c3-mini run-c3-mini build-s3-zero run-s3-zero build-c3-zero run-c3-zero clean-build-s3-mini clean-build-c3-mini clean-build-s3-zero clean-build-c3-zero s3 c3
+.PHONY: clean build-s3-mini run-s3-mini build-c3-mini run-c3-mini build-s3-zero run-s3-zero build-c3-zero run-c3-zero build-atom-matrix run-atom-matrix clean-build-s3-mini clean-build-c3-mini clean-build-s3-zero clean-build-c3-zero clean-build-atom-matrix s3 c3
 
 # Clean all build artifacts
 clean:
@@ -54,6 +61,15 @@ build-c3-zero:
 
 run-c3-zero:
 	$(ESPHOME_CMD) run $(YAML_PREFIX)esp32c3-zero.yaml
+
+# M5Stack ATOM Matrix builds (unique process)
+build-atom-matrix:
+	$(ESPHOME_CMD) compile $(YAML_PREFIX)atom-matrix.yaml
+
+run-atom-matrix:
+	$(ESPHOME_CMD) run $(YAML_PREFIX)atom-matrix.yaml
+
+clean-build-atom-matrix: clean build-atom-matrix
 
 # Clean and build targets (automatically clean before building different chip families)
 clean-build-s3-mini: clean build-s3-mini

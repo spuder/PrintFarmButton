@@ -1,0 +1,16 @@
+# The m5 doens't support pull up or pull down modes
+
+binary_sensor:
+- platform: gpio
+  name: "Internal Button"
+  id: internal_button
+  internal: true
+  pin:
+    number: ${button_internal}
+  filters:
+  - delayed_on: 100ms
+  - delayed_off: 100ms
+  on_press:
+    then:
+    - logger.log: "Internal button pressed"
+    - script.execute: mark_printer_ready

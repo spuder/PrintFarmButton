@@ -1,0 +1,13 @@
+substitutions:
+  button_internal: "39"
+  led_gpio: "27"
+  manifest_file: "manifest-atom-matrix.json"
+
+# https://docs.m5stack.com/en/core/ATOM%20Matrix
+esp32:
+  board: m5stack-atom
+  framework:
+    type: esp-idf
+packages:
+  common: !include common.yaml
+  button_m5: !include conf.d/button_m5.yaml

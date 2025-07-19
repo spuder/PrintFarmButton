@@ -215,6 +215,86 @@ jobs:
           retention-days: 5
           if-no-files-found: error
 
+  build-atom-matrix:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create empty secrets file
+        run: |
+          touch firmware/esphome/secrets.yaml || true
+      - name: Setup yq
+        uses: vegardit/gha-setup-yq@v1
+      - name: Set git sha
+        run: |
+          SUMMARY=$(git log -1 --pretty=%B)
+          SUMMARY="${SUMMARY//'%'/'%25'}"
+          SUMMARY="${SUMMARY//$'\n'/'%0A'}"
+          SUMMARY="${SUMMARY//$'\r'/'%0D'}"
+          echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
+      - name: Modify version.yaml
+        run: |
+          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
+          cat firmware/esphome/conf.d/version.yaml
+      - name: Build firmware
+        uses: esphome/build-action@v7
+        with:
+          yaml-file: firmware/esphome/atom-matrix.yaml
+          complete-manifest: false
+          version: ${{ env.ESPHOME_VERSION }}
+      - name: List build output
+        run: |
+          ls -la
+          echo "Looking for build directories..."
+          for dir in printfarmbutton*; do
+            if [ -d "$dir" ]; then
+              echo "Found build directory: $dir"
+              ls -la "$dir/" || true
+            fi
+          done
+      - name: Rename build directory to avoid conflicts
+        run: |
+          BUILD_DIR=""
+          for dir in printfarmbutton*; do
+            if [ -d "$dir" ]; then
+              BUILD_DIR="$dir"
+              break
+            fi
+          done
+          if [ -z "$BUILD_DIR" ]; then
+            echo "Error: No build directory found"
+            exit 1
+          fi
+          NEW_DIR="atom-matrix-build"
+          echo "Renaming $BUILD_DIR to $NEW_DIR"
+          mv "$BUILD_DIR" "$NEW_DIR"
+          ls -la "$NEW_DIR"
+      - name: Generate md5 checksum
+        run: |
+          BUILD_DIR="atom-matrix-build"
+          echo "Using build directory: $BUILD_DIR"
+          ls -la "$BUILD_DIR"
+          for file in "$BUILD_DIR"/*.bin; do
+            if [ -f "$file" ]; then
+              md5sum "$file" | awk '{print $1}' > "${file}.md5"
+              md5_length=$(wc -c < "${file}.md5")
+              if [ "$md5_length" -ne 33 ]; then
+                echo "MD5 generation failed for $file (length: $md5_length)"
+                exit 1
+              fi
+            fi
+          done
+          ls -la "$BUILD_DIR"
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: atom-matrix
+          path: atom-matrix-build/**/*
+          retention-days: 5
+          if-no-files-found: error
+
   combine-and-deploy:
     needs: [build-esp32c3, build-esp32s3]
     runs-on: ubuntu-latest
@@ -247,37 +327,44 @@ jobs:
       - name: Prepare output directory
         run: |
           mkdir -p firmware/output
-          for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero; do
+          for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero atom-matrix; do
             if [ -d "downloaded-artifacts/$target" ]; then
-              # Determine new filename pattern: printfarmbutton-<type>-<family>
+              # Determine new filename pattern: printfarmbutton-<type>-<family> or atom-matrix
               board_type=""
               chip_family=""
-              if [[ "$target" == *"supermini"* ]]; then
+              if [[ "$target" == "atom-matrix" ]]; then
+                board_type="atom-matrix"
+                chip_family="esp32"
+              elif [[ "$target" == *"supermini"* ]]; then
                 board_type="supermini"
               elif [[ "$target" == *"zero"* ]]; then
                 board_type="zero"
               fi
-              
               if [[ "$target" == *"s3"* ]]; then
                 chip_family="esp32s3"
               elif [[ "$target" == *"c3"* ]]; then
                 chip_family="esp32c3"
               fi
-              
               # Rename files to include board type and chip family
               for bin_file in downloaded-artifacts/$target/*.bin; do
                 if [ -f "$bin_file" ]; then
                   filename=$(basename "$bin_file")
-                  # Replace the entire printfarmbutton-<chip> pattern with printfarmbutton-<type>-<chip>
-                  new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
+                  if [[ "$target" == "atom-matrix" ]]; then
+                    new_filename="printfarmbutton-atom-matrix-esp32.factory.bin"
+                  else
+                    new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
+                  fi
                   cp "$bin_file" "firmware/output/$new_filename"
                 fi
               done
               for md5_file in downloaded-artifacts/$target/*.md5; do
                 if [ -f "$md5_file" ]; then
                   filename=$(basename "$md5_file")
-                  # Replace the entire printfarmbutton-<chip> pattern with printfarmbutton-<type>-<chip>
-                  new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
+                  if [[ "$target" == "atom-matrix" ]]; then
+                    new_filename="printfarmbutton-atom-matrix-esp32.factory.bin.md5"
+                  else
+                    new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
+                  fi
                   cp "$md5_file" "firmware/output/$new_filename"
                 fi
               done
@@ -310,6 +397,13 @@ jobs:
             builds: [],
             new_install_prompt_erase: true
           }' > firmware/output/manifest-zero.json
+
+          jq -n --arg version "$VERSION" '{
+            name: "PrintFarmButton ATOM Matrix",
+            version: $version,
+            builds: [],
+            new_install_prompt_erase: true
+          }' > firmware/output/manifest-atom-matrix.json
 
           echo "Looking for build artifacts..."
           for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero; do
@@ -423,11 +517,39 @@ jobs:
             fi
           done
 
+          # Add atom-matrix build to its manifest
+          if [ -d "downloaded-artifacts/atom-matrix" ]; then
+            echo "Processing build: atom-matrix"
+            project_name="spuder.printfarmbutton"
+            target_manifest="firmware/output/manifest-atom-matrix.json"
+            board_type="atom-matrix"
+            chip_family="esp32"
+            # Look for binary files
+            factory_bin=""
+            if [ -f "firmware/output/printfarmbutton-atom-matrix-esp32.factory.bin" ]; then
+              factory_bin="printfarmbutton-atom-matrix-esp32.factory.bin"
+            fi
+            if [ -n "$factory_bin" ]; then
+              manifest_entry=$(jq -n --arg chip "ESP32" --arg project "$project_name" --arg factory_path "$factory_bin" '{
+                "chipFamily": $chip,
+                "project": $project,
+                "parts": [{"path": $factory_path, "offset": 0}]
+              }')
+              jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
+              echo "Successfully created manifest entry for atom-matrix"
+            else
+              echo "No binary files found for atom-matrix"
+            fi
+          fi
+
           echo "Final supermini manifest:"
           jq '.' firmware/output/manifest-supermini.json
           echo ""
           echo "Final zero manifest:"
           jq '.' firmware/output/manifest-zero.json
+          echo ""
+          echo "Final atom-matrix manifest:"
+          jq '.' firmware/output/manifest-atom-matrix.json
 
       - name: List files in output directory
         run: |
