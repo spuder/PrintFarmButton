@@ -50,7 +50,7 @@
       75% { transform: translateX(-25%); }
       100% { transform: translateX(1); }
     }
-    .container { max-width: 500px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2em; }
+    .container { max-width: 500px; margin: 10px auto 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #0001; padding: 2em; }
     h1 { text-align: center; }
     label { font-weight: bold; }
     select, button { width: 100%; padding: 0.7em; margin: 1em 0; font-size: 1em; }
@@ -67,22 +67,34 @@
   <div class="container">
     <h1>PrintFarmButton Flasher</h1>
     <div class="desc">Select your board type and flash the latest firmware using your browser.</div>
-    <div id="board-images" style="display: flex; flex-wrap: wrap; gap: 1em; justify-content: center; margin-bottom: 1.5em;">
-      <div class="board-option" data-board="esp32s3-zero" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
-        <img src="images/s3zero.jpg" alt="ESP32S3 Zero" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
-        <div style="text-align:center;">ESP32S3 Zero</div>
+    <div style="margin-bottom:1.5em;">
+      <div style="text-align:center; font-size:1.2em; color:#1976d2; font-weight:bold; margin-bottom:0.5em;">Kit</div>
+      <div id="kit-board" style="display: flex; justify-content: center;">
+        <div class="board-option" data-board="esp32s3-zero" tabindex="0" style="cursor:pointer; border: 2px solid #3c84ce; border-radius: 8px; padding: 0.5em; background: #e6f0fa; transition: border 0.2s;">
+          <img src="images/button.png" alt="PrintFarmButton Kit" style="width: 120px; height: 120px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
+          <div style="text-align:center; font-weight:bold;">PrintFarmButton Kit</div>
+        </div>
       </div>
-      <div class="board-option" data-board="esp32s3-supermini" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
-        <img src="images/s3supermini.jpg" alt="ESP32S3 SuperMini" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
-        <div style="text-align:center;">ESP32S3 SuperMini</div>
-      </div>
-      <div class="board-option" data-board="esp32c3-zero" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
-        <img src="images/c3zero.jpg" alt="ESP32C3 Zero" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
-        <div style="text-align:center;">ESP32C3 Zero</div>
-      </div>
-      <div class="board-option" data-board="esp32c3-supermini" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
-        <img src="images/c3supermini.jpg" alt="ESP32C3 SuperMini" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
-        <div style="text-align:center;">ESP32C3 SuperMini</div>
+    </div>
+    <div style="margin-bottom:2em;">
+      <div style="text-align:center; font-size:1.2em; color:#1976d2; font-weight:bold; margin-bottom:0.5em;">DIY</div>
+      <div id="board-images" style="display: flex; flex-wrap: wrap; gap: 1em; justify-content: center;">
+        <div class="board-option" data-board="esp32s3-supermini" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
+          <img src="images/s3supermini.jpg" alt="ESP32S3 SuperMini" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
+          <div style="text-align:center;">ESP32S3 SuperMini</div>
+        </div>
+        <div class="board-option" data-board="esp32c3-zero" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
+          <img src="images/c3zero.jpg" alt="ESP32C3 Zero" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
+          <div style="text-align:center;">ESP32C3 Zero</div>
+        </div>
+        <div class="board-option" data-board="esp32c3-supermini" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
+          <img src="images/c3supermini.jpg" alt="ESP32C3 SuperMini" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
+          <div style="text-align:center;">ESP32C3 SuperMini</div>
+        </div>
+        <div class="board-option" data-board="esp32s3-zero" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
+          <img src="images/s3zero.jpg" alt="ESP32S3 Zero" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
+          <div style="text-align:center;">ESP32S3 Zero</div>
+        </div>
       </div>
     </div>
     <esp-web-install-button id="esp-flash" manifest="hardware/output/manifest-zero.json"></esp-web-install-button>
@@ -109,6 +121,7 @@
       'esp32c3-supermini': 'https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/output/manifest-supermini.json',
     };
     const flashBtn = document.getElementById('esp-flash');
+    // Select all board options, including kit
     const boardOptions = document.querySelectorAll('.board-option');
     let selectedBoard = 'esp32s3-zero';
     function updateSelection(board) {
