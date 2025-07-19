@@ -1,0 +1,17 @@
+{
+  "name": "PrintFarmButton ATOM Matrix",
+  "version": "1.7.4",
+  "builds": [
+    {
+      "chipFamily": "ESP32",
+      "project": "spuder.printfarmbutton",
+      "parts": [
+        {
+          "path": "printfarmbutton-atom-matrix-esp32.factory.bin",
+          "offset": 0
+        }
+      ]
+    }
+  ],
+  "new_install_prompt_erase": true
+}

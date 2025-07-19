@@ -1,12 +1,12 @@
 {
   "name": "PrintFarmButton Zero",
-  "version": "1.7.3",
+  "version": "1.7.4",
   "builds": [
     {
       "chipFamily": "ESP32-S3",
       "ota": {
         "path": "printfarmbutton-zero-esp32s3.ota.bin",
-        "md5": "2b2da2453e00943ce38f695fad25bb40"
+        "md5": "482ecd2f54957e6077379372244ca0fc"
       },
       "parts": [
         {
@@ -20,7 +20,7 @@
       "chipFamily": "ESP32-C3",
       "ota": {
         "path": "printfarmbutton-zero-esp32c3.ota.bin",
-        "md5": "217d1d794c35483ca6a92acd78d010ec"
+        "md5": "ea939c8b97a45e61cee7ff8464f527fa"
       },
       "parts": [
         {
