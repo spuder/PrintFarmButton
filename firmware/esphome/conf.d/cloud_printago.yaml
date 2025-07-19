@@ -680,17 +680,18 @@ text:
         ESP_LOGI("mqtt", "Subscribing to entities topic: %s", entities_topic.c_str());
 
         id(mqtt_client_id).subscribe_json(entities_topic, [new_printer_id](const std::string &topic, JsonObject root) {
-          bool ready_state = false;
+          // Only update if the message contains the current printer's info
           if (!root["entities"].isNull()) {
             JsonObject entities = root["entities"];
             if (!entities[new_printer_id.c_str()].isNull()) {
               JsonObject printer_obj = entities[new_printer_id.c_str()];
               if (!printer_obj["confirmedReady"].isNull()) {
-                ready_state = (bool)printer_obj["confirmedReady"];
+                bool ready_state = (bool)printer_obj["confirmedReady"];
+                id(printer_confirmed_ready_sensor).publish_state(ready_state);
               }
             }
           }
-          id(printer_confirmed_ready_sensor).publish_state(ready_state);
+          // Do NOT update the sensor if the message does not contain this printer's info
         });
 select:
 - platform: template
