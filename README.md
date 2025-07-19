@@ -17,9 +17,17 @@ See the state of your prints with a physical LED & microcontroller. With the pus
 | 3dprinteros     | 🕵️ Evaluating      |
 
 
-**Support PrintFarmButton:**
-Printago is free forever! If you are signing up, please use our affiliate link to help support this project:
-[https://www.printago.io?via=spuder](https://www.printago.io?via=spuder)
+
+
+
+
+**Want to support the project?**
+
+Consider signing up for a free printago.io account using our affiliate code **SPUDER**
+
+[![Sign up at Printago.io](https://img.shields.io/badge/Sign%20up%20at%20Printago.io-1976d2?style=for-the-badge&logo=printago&logoColor=white&labelColor=1976d2&color=1976d2)](https://www.printago.io?via=spuder)
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/openspool)
 
 ## Setup
 
