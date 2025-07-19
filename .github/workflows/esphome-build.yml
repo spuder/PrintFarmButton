@@ -296,7 +296,7 @@ jobs:
           if-no-files-found: error
 
   combine-and-deploy:
-    needs: [build-esp32c3, build-esp32s3]
+    needs: [build-esp32c3, build-esp32s3, build-atom-matrix]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
@@ -517,28 +517,62 @@ jobs:
             fi
           done
 
-          # Add atom-matrix build to its manifest
+          # Add atom-matrix build to its manifest (same logic as other boards)
           if [ -d "downloaded-artifacts/atom-matrix" ]; then
             echo "Processing build: atom-matrix"
             project_name="spuder.printfarmbutton"
             target_manifest="firmware/output/manifest-atom-matrix.json"
             board_type="atom-matrix"
             chip_family="esp32"
-            # Look for binary files
-            factory_bin=""
-            if [ -f "firmware/output/printfarmbutton-atom-matrix-esp32.factory.bin" ]; then
-              factory_bin="printfarmbutton-atom-matrix-esp32.factory.bin"
-            fi
-            if [ -n "$factory_bin" ]; then
-              manifest_entry=$(jq -n --arg chip "ESP32" --arg project "$project_name" --arg factory_path "$factory_bin" '{
-                "chipFamily": $chip,
-                "project": $project,
-                "parts": [{"path": $factory_path, "offset": 0}]
-              }')
-              jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
-              echo "Successfully created manifest entry for atom-matrix"
+            chip_family_name="ESP32"
+            # Check if manifest.json exists (prefer ESPHome manifest)
+            if [ -f "downloaded-artifacts/atom-matrix/manifest.json" ]; then
+              echo "Found ESPHome-generated manifest.json for atom-matrix"
+              echo "Manifest contents:"
+              cat "downloaded-artifacts/atom-matrix/manifest.json"
+              manifest_content=$(cat "downloaded-artifacts/atom-matrix/manifest.json")
+              updated_manifest=$(echo "$manifest_content" | jq --arg board_type "$board_type" --arg chip_family "$chip_family" --arg project "$project_name" '
+                . + {"project": $project} |
+                if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton-" + $chip_family; "printfarmbutton-" + $board_type + "-" + $chip_family) | gsub("^printfarmbutton\\."; "printfarmbutton-" + $board_type + "-" + $chip_family + "."))] else . end |
+                if .ota then .ota.path = (.ota.path | gsub("printfarmbutton-" + $chip_family; "printfarmbutton-" + $board_type + "-" + $chip_family) | gsub("^printfarmbutton\\."; "printfarmbutton-" + $board_type + "-" + $chip_family + ".")) else . end
+              ')
+              jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
+              echo "Successfully added atom-matrix to manifest using ESPHome manifest"
             else
-              echo "No binary files found for atom-matrix"
+              echo "No ESPHome manifest found for atom-matrix, creating fallback entry..."
+              # Fallback logic (same as other boards)
+              factory_bin=""
+              ota_bin=""
+              # Check for renamed files in output directory
+              if [ -f "firmware/output/printfarmbutton-atom-matrix-esp32.factory.bin" ]; then
+                factory_bin="printfarmbutton-atom-matrix-esp32.factory.bin"
+              fi
+              if [ -f "firmware/output/printfarmbutton-atom-matrix-esp32.ota.bin" ]; then
+                ota_bin="printfarmbutton-atom-matrix-esp32.ota.bin"
+              fi
+              if [ -n "$factory_bin" ] && [ -n "$ota_bin" ]; then
+                echo "Creating full manifest entry with factory and OTA binaries"
+                manifest_entry=$(jq -n --arg chip "$chip_family_name" --arg project "$project_name" --arg factory_path "$factory_bin" --arg ota_path "$ota_bin" '{
+                  "chipFamily": $chip,
+                  "project": $project,
+                  "parts": [{"path": $factory_path, "offset": 0}],
+                  "ota": {"path": $ota_path}
+                }')
+              elif [ -n "$factory_bin" ]; then
+                echo "Creating manifest entry with factory binary only"
+                manifest_entry=$(jq -n --arg chip "$chip_family_name" --arg project "$project_name" --arg factory_path "$factory_bin" '{
+                  "chipFamily": $chip,
+                  "project": $project,
+                  "parts": [{"path": $factory_path, "offset": 0}]
+                }')
+              else
+                echo "Error: No binary files found for atom-matrix"
+                echo "Available files:"
+                ls -la "downloaded-artifacts/atom-matrix/"
+                exit 1
+              fi
+              jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
+              echo "Successfully created fallback manifest entry for atom-matrix"
             fi
           fi
 
