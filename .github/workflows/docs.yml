@@ -6,6 +6,7 @@ on:
     branches: ["main"]
     paths:
       - 'index.html'
+      - 'flash.html'
       - 'docs/**'
   workflow_dispatch:
 
