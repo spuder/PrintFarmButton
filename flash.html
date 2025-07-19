@@ -95,6 +95,10 @@
           <img src="images/s3zero.jpg" alt="ESP32S3 Zero" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
           <div style="text-align:center;">ESP32S3 Zero</div>
         </div>
+        <div class="board-option" data-board="atom-matrix" tabindex="0" style="cursor:pointer; border: 2px solid #ccc; border-radius: 8px; padding: 0.5em; background: #fafafa; transition: border 0.2s;">
+          <img src="images/atom matrix.png" alt="ATOM Matrix" style="width: 100px; height: 100px; object-fit: cover; border-radius: 6px; display: block; margin: 0 auto 0.5em;">
+          <div style="text-align:center;">ATOM Matrix</div>
+        </div>
       </div>
     </div>
     <esp-web-install-button id="esp-flash" manifest="hardware/output/manifest-zero.json"></esp-web-install-button>
@@ -119,6 +123,7 @@
       'esp32s3-supermini': 'https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/output/manifest-supermini.json',
       'esp32c3-zero': 'https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/output/manifest-zero.json',
       'esp32c3-supermini': 'https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/output/manifest-supermini.json',
+      'atom-matrix': 'https://raw.githubusercontent.com/spuder/PrintFarmButton/main/firmware/output/manifest-atom-matrix.json',
     };
     const flashBtn = document.getElementById('esp-flash');
     // Select all board options, including kit
