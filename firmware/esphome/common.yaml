@@ -16,6 +16,11 @@ esphome:
         // Set version once at boot
         id(printfarmbutton_version).publish_state("${version}");
         ESP_LOGI("version", "Set installed version to: ${version}");
+    - if:
+        condition:
+          lambda: 'return id(cloud_connection).state == "Printago";'
+        then:
+        - script.execute: check_printago_status
 
 packages:
   led: !include conf.d/led.yaml

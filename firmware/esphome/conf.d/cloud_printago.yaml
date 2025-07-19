@@ -84,6 +84,7 @@ script:
         - lambda: 'return !id(api_key_text).state.empty();'
         - lambda: 'return !id(storeid_text).state.empty();'
         - lambda: 'return !id(mqtt_endpoint_text).state.empty();'
+        - lambda: 'return !id(mqtt_port_text).state.empty();'
       then:
       - http_request.get:
           url: !lambda |-

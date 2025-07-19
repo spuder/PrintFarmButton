@@ -8,7 +8,11 @@ wifi:
   on_connect:
     then:
     - logger.log: "WiFi Connected!"
-    - script.execute: check_printago_status
+    - if:
+        condition:
+          lambda: 'return id(cloud_connection).state == "Printago";'
+        then:
+        - script.execute: check_printago_status
     # - component.update: firmware_update #TODO: This doesn't update for some reason
   on_disconnect:
     then:
