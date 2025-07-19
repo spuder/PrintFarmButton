@@ -26,3 +26,5 @@
 [x] Should curl auto enable updaates? 
 [ ] Auto-fetch printer list on boot when credentials are available
 [ ] Fix offline printers showing as green when they should be red
+[ ] store id not persisting across reboots
+[ ] not fetching information on boot

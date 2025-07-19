@@ -1,5 +1,6 @@
 substitutions:
   button_gpio: "1"
+  button_internal: "0"
   led_gpio: "2"
   manifest_file: "manifest-zero.json"
 
@@ -10,3 +11,4 @@ esp32:
     type: esp-idf
 packages:
   common: !include common.yaml
+  button_internal: !include conf.d/button_internal.yaml
