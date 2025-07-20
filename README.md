@@ -44,7 +44,7 @@ Web Flashing utility to install printfarm button firmware.
 
 https://printfarmbutton.com/flash
 
-![https://printfarmbutton.com/flash](images/flasher.png)
+[![Alt text](images/flasher.png)](https://printfarmbutton.com/flash)
 
 ## Wifi Network
 
@@ -54,6 +54,7 @@ Automate joining the wifi network with the [web wifi configuration tool](https:/
 [https://printfarmbutton.com/](https://printfarmbutton.com/)
 
 ![https://printfarmbutton.com/](images/wifi.png)
+[![Alt text](images/wifi.png)](https://printfarmbutton.com)
 
 You will see a new wifi network named `printfarmbutton-xxxx`. Join the network and navigate to [192.168.4.1](http://192.168.4.1)
 Enter your wifi credentials and wait for it to reboot. 
