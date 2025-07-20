@@ -4,8 +4,18 @@
   <img src="images/logo.png" alt="PrintFarmButton Logo" width="200"/>
 </p>
 
-Open Source Andon light for 3d printers. 
+Open Source Button for 3d printer farms
+
 See the state of your prints with a physical LED & microcontroller. With the push of a button you can mark your print plate as clear and ready for the next print in the queue. 
+
+### Printago States:  
+🟦 - Idle  
+🟨 - Downloading / Starting   
+🟪 - Finished / Waiting for bed clear  
+🟩 - Printing  
+🟥 - Error
+
+![](https://media3.giphy.com/media/v1.Y2lkPTc5MGI3NjExOWxkNWJtYTQ3bGVjZjJ3dHZzOHoycGk4YWF1MHhnMnFjbHBubmlsZSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/TTlcncTI76QiRCJBNE/giphy.gif)
 
 ![](https://media1.giphy.com/media/v1.Y2lkPTc5MGI3NjExejhjendla2ZvaDR5eXcyZnNobXk1cjVlenRvdnI5NnlqcDJwZThibyZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/tNpQUCCrrKZJmP0xzz/giphy.gif)
 
@@ -24,13 +34,13 @@ See the state of your prints with a physical LED & microcontroller. With the pus
 Sign up for a free printago.io account using our affiliate code **SPUDER**
 Its free forever with ulimited printers. 
 
-[![Sign up at Printago.io](https://img.shields.io/badge/Sign%20up%20at%20Printago.io-1976d2?style=for-the-badge&logo=printago&logoColor=white&labelColor=1976d2&color=1976d2)](https://www.printago.io?via=spuder)
+[![Create free Printago account](https://img.shields.io/badge/Sign%20up%20at%20Printago.io-1976d2?style=for-the-badge&logo=printago&logoColor=white&labelColor=1976d2&color=1976d2)](https://www.printago.io?via=spuder)
 
 [!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/openspool)
 
 ## Setup
 
-Web Flashing utility
+Web Flashing utility to install printfarm button firmware. 
 
 https://printfarmbutton.com/flash
 
