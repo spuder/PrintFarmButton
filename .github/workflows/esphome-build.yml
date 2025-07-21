@@ -127,6 +127,9 @@ jobs:
                 echo "MD5 generation failed for $file (length: $md5_length)"
                 exit 1
               fi
+              echo -n "MD5 for $file: "
+              cat "${file}.md5"
+              echo
             fi
           done
           ls -la "$FINAL_BUILD_DIR"
@@ -251,6 +254,9 @@ jobs:
                 echo "MD5 generation failed for $file (length: $md5_length)"
                 exit 1
               fi
+              echo -n "MD5 for $file: "
+              cat "${file}.md5"
+              echo
             fi
           done
           ls -la "$FINAL_BUILD_DIR"
@@ -360,6 +366,9 @@ jobs:
                 echo "MD5 generation failed for $file (length: $md5_length)"
                 exit 1
               fi
+              echo -n "MD5 for $file: "
+              cat "${file}.md5"
+              echo
             fi
           done
           ls -la "$FINAL_BUILD_DIR"
