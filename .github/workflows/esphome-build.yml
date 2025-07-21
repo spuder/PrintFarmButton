@@ -18,6 +18,7 @@ jobs:
   build-esp32c3:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1  # Ensure builds don't interfere with each other
       matrix:
         include:
           - target: esp32c3-zero
@@ -37,13 +38,16 @@ jobs:
       - name: Setup yq
         uses: vegardit/gha-setup-yq@v1
 
-      - name: Set git sha
+      - name: Set git sha and unique build ID
         run: |
           SUMMARY=$(git log -1 --pretty=%B)
           SUMMARY="${SUMMARY//'%'/'%25'}"
           SUMMARY="${SUMMARY//$'\n'/'%0A'}"
           SUMMARY="${SUMMARY//$'\r'/'%0D'}"
           echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
+          # Create unique build identifier to avoid conflicts
+          BUILD_ID="${{ matrix.target }}-$(date +%s)-$RANDOM"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
 
       - name: Modify version.yaml
         run: |
@@ -57,45 +61,65 @@ jobs:
           complete-manifest: false
           version: ${{ env.ESPHOME_VERSION }}
 
-      - name: List build output
+      - name: List build output and find specific directory
         run: |
           ls -la
           echo "Looking for build directories..."
-          for dir in printfarmbutton*; do
+          echo "Expected target: ${{ matrix.target }}"
+          echo "Build ID: $BUILD_ID"
+          
+          # List all directories for debugging
+          for dir in */; do
             if [ -d "$dir" ]; then
-              echo "Found build directory: $dir"
-              ls -la "$dir/" || true
+              echo "Found directory: $dir"
             fi
           done
 
-      - name: Rename build directory to avoid conflicts
+      - name: Rename build directory with target-specific logic
         run: |
-          # Find the actual build directory
+          # More specific directory finding based on expected ESPHome output
           BUILD_DIR=""
-          for dir in printfarmbutton*; do
-            if [ -d "$dir" ]; then
-              BUILD_DIR="$dir"
-              break
-            fi
+          EXPECTED_PATTERNS=(
+            "printfarmbutton*${{ matrix.target }}*"
+            "printfarmbutton*c3*"
+            "printfarmbutton*"
+          )
+          
+          # Try each pattern in order of specificity
+          for pattern in "${EXPECTED_PATTERNS[@]}"; do
+            for dir in $pattern; do
+              if [ -d "$dir" ] && [ -z "$BUILD_DIR" ]; then
+                # Verify this directory contains .bin files
+                if ls "$dir"/*.bin 1> /dev/null 2>&1; then
+                  BUILD_DIR="$dir"
+                  echo "Selected build directory: $BUILD_DIR (matched pattern: $pattern)"
+                  break 2
+                fi
+              fi
+            done
           done
           
           if [ -z "$BUILD_DIR" ]; then
-            echo "Error: No build directory found"
+            echo "Error: No suitable build directory found with .bin files"
+            echo "Available directories:"
+            ls -la
             exit 1
           fi
           
-          # Rename to target-specific directory
-          NEW_DIR="${{ matrix.target }}-build"
+          # Use target-specific directory name with timestamp to ensure uniqueness
+          NEW_DIR="${{ matrix.target }}-build-$(date +%s)"
           echo "Renaming $BUILD_DIR to $NEW_DIR"
           mv "$BUILD_DIR" "$NEW_DIR"
           ls -la "$NEW_DIR"
+          
+          # Store the new directory name for subsequent steps
+          echo "FINAL_BUILD_DIR=$NEW_DIR" >> $GITHUB_ENV
 
       - name: Generate md5 checksum
         run: |
-          BUILD_DIR="${{ matrix.target }}-build"
-          echo "Using build directory: $BUILD_DIR"
-          ls -la "$BUILD_DIR"
-          for file in "$BUILD_DIR"/*.bin; do
+          echo "Using build directory: $FINAL_BUILD_DIR"
+          ls -la "$FINAL_BUILD_DIR"
+          for file in "$FINAL_BUILD_DIR"/*.bin; do
             if [ -f "$file" ]; then
               md5sum "$file" | awk '{print $1}' > "${file}.md5"
               md5_length=$(wc -c < "${file}.md5")
@@ -105,19 +129,20 @@ jobs:
               fi
             fi
           done
-          ls -la "$BUILD_DIR"
+          ls -la "$FINAL_BUILD_DIR"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
-          path: ${{ matrix.target }}-build/**/*
+          name: ${{ matrix.target }}-${{ github.run_id }}  # Include run ID to ensure uniqueness
+          path: ${{ env.FINAL_BUILD_DIR }}/**/*
           retention-days: 5
           if-no-files-found: error
 
   build-esp32s3:
     runs-on: ubuntu-latest
     strategy:
+      max-parallel: 1  # Ensure builds don't interfere with each other
       matrix:
         include:
           - target: esp32s3-zero
@@ -137,13 +162,16 @@ jobs:
       - name: Setup yq
         uses: vegardit/gha-setup-yq@v1
 
-      - name: Set git sha
+      - name: Set git sha and unique build ID
         run: |
           SUMMARY=$(git log -1 --pretty=%B)
           SUMMARY="${SUMMARY//'%'/'%25'}"
           SUMMARY="${SUMMARY//$'\n'/'%0A'}"
           SUMMARY="${SUMMARY//$'\r'/'%0D'}"
           echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
+          # Create unique build identifier to avoid conflicts
+          BUILD_ID="${{ matrix.target }}-$(date +%s)-$RANDOM"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
 
       - name: Modify version.yaml
         run: |
@@ -157,45 +185,65 @@ jobs:
           complete-manifest: false
           version: ${{ env.ESPHOME_VERSION }}
 
-      - name: List build output
+      - name: List build output and find specific directory
         run: |
           ls -la
           echo "Looking for build directories..."
-          for dir in printfarmbutton*; do
+          echo "Expected target: ${{ matrix.target }}"
+          echo "Build ID: $BUILD_ID"
+          
+          # List all directories for debugging
+          for dir in */; do
             if [ -d "$dir" ]; then
-              echo "Found build directory: $dir"
-              ls -la "$dir/" || true
+              echo "Found directory: $dir"
             fi
           done
 
-      - name: Rename build directory to avoid conflicts
+      - name: Rename build directory with target-specific logic
         run: |
-          # Find the actual build directory
+          # More specific directory finding based on expected ESPHome output
           BUILD_DIR=""
-          for dir in printfarmbutton*; do
-            if [ -d "$dir" ]; then
-              BUILD_DIR="$dir"
-              break
-            fi
+          EXPECTED_PATTERNS=(
+            "printfarmbutton*${{ matrix.target }}*"
+            "printfarmbutton*s3*"
+            "printfarmbutton*"
+          )
+          
+          # Try each pattern in order of specificity
+          for pattern in "${EXPECTED_PATTERNS[@]}"; do
+            for dir in $pattern; do
+              if [ -d "$dir" ] && [ -z "$BUILD_DIR" ]; then
+                # Verify this directory contains .bin files
+                if ls "$dir"/*.bin 1> /dev/null 2>&1; then
+                  BUILD_DIR="$dir"
+                  echo "Selected build directory: $BUILD_DIR (matched pattern: $pattern)"
+                  break 2
+                fi
+              fi
+            done
           done
           
           if [ -z "$BUILD_DIR" ]; then
-            echo "Error: No build directory found"
+            echo "Error: No suitable build directory found with .bin files"
+            echo "Available directories:"
+            ls -la
             exit 1
           fi
           
-          # Rename to target-specific directory
-          NEW_DIR="${{ matrix.target }}-build"
+          # Use target-specific directory name with timestamp to ensure uniqueness
+          NEW_DIR="${{ matrix.target }}-build-$(date +%s)"
           echo "Renaming $BUILD_DIR to $NEW_DIR"
           mv "$BUILD_DIR" "$NEW_DIR"
           ls -la "$NEW_DIR"
+          
+          # Store the new directory name for subsequent steps
+          echo "FINAL_BUILD_DIR=$NEW_DIR" >> $GITHUB_ENV
 
       - name: Generate md5 checksum
         run: |
-          BUILD_DIR="${{ matrix.target }}-build"
-          echo "Using build directory: $BUILD_DIR"
-          ls -la "$BUILD_DIR"
-          for file in "$BUILD_DIR"/*.bin; do
+          echo "Using build directory: $FINAL_BUILD_DIR"
+          ls -la "$FINAL_BUILD_DIR"
+          for file in "$FINAL_BUILD_DIR"/*.bin; do
             if [ -f "$file" ]; then
               md5sum "$file" | awk '{print $1}' > "${file}.md5"
               md5_length=$(wc -c < "${file}.md5")
@@ -205,13 +253,13 @@ jobs:
               fi
             fi
           done
-          ls -la "$BUILD_DIR"
+          ls -la "$FINAL_BUILD_DIR"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.target }}
-          path: ${{ matrix.target }}-build/**/*
+          name: ${{ matrix.target }}-${{ github.run_id }}  # Include run ID to ensure uniqueness
+          path: ${{ env.FINAL_BUILD_DIR }}/**/*
           retention-days: 5
           if-no-files-found: error
 
@@ -227,13 +275,16 @@ jobs:
           touch firmware/esphome/secrets.yaml || true
       - name: Setup yq
         uses: vegardit/gha-setup-yq@v1
-      - name: Set git sha
+      - name: Set git sha and unique build ID
         run: |
           SUMMARY=$(git log -1 --pretty=%B)
           SUMMARY="${SUMMARY//'%'/'%25'}"
           SUMMARY="${SUMMARY//$'\n'/'%0A'}"
           SUMMARY="${SUMMARY//$'\r'/'%0D'}"
           echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
+          # Create unique build identifier to avoid conflicts
+          BUILD_ID="atom-matrix-$(date +%s)-$RANDOM"
+          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
       - name: Modify version.yaml
         run: |
           yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
@@ -244,39 +295,64 @@ jobs:
           yaml-file: firmware/esphome/atom-matrix.yaml
           complete-manifest: false
           version: ${{ env.ESPHOME_VERSION }}
-      - name: List build output
+      - name: List build output and find specific directory
         run: |
           ls -la
           echo "Looking for build directories..."
-          for dir in printfarmbutton*; do
+          echo "Expected target: atom-matrix"
+          echo "Build ID: $BUILD_ID"
+          
+          # List all directories for debugging
+          for dir in */; do
             if [ -d "$dir" ]; then
-              echo "Found build directory: $dir"
-              ls -la "$dir/" || true
+              echo "Found directory: $dir"
             fi
           done
-      - name: Rename build directory to avoid conflicts
+      - name: Rename build directory with atom-matrix specific logic
         run: |
+          # More specific directory finding for atom-matrix
           BUILD_DIR=""
-          for dir in printfarmbutton*; do
-            if [ -d "$dir" ]; then
-              BUILD_DIR="$dir"
-              break
-            fi
+          EXPECTED_PATTERNS=(
+            "printfarmbutton*atom*"
+            "printfarmbutton*matrix*"
+            "printfarmbutton*esp32*"
+            "printfarmbutton*"
+          )
+          
+          # Try each pattern in order of specificity
+          for pattern in "${EXPECTED_PATTERNS[@]}"; do
+            for dir in $pattern; do
+              if [ -d "$dir" ] && [ -z "$BUILD_DIR" ]; then
+                # Verify this directory contains .bin files
+                if ls "$dir"/*.bin 1> /dev/null 2>&1; then
+                  BUILD_DIR="$dir"
+                  echo "Selected build directory: $BUILD_DIR (matched pattern: $pattern)"
+                  break 2
+                fi
+              fi
+            done
           done
+          
           if [ -z "$BUILD_DIR" ]; then
-            echo "Error: No build directory found"
+            echo "Error: No suitable build directory found with .bin files"
+            echo "Available directories:"
+            ls -la
             exit 1
           fi
-          NEW_DIR="atom-matrix-build"
+          
+          # Use atom-matrix-specific directory name with timestamp to ensure uniqueness
+          NEW_DIR="atom-matrix-build-$(date +%s)"
           echo "Renaming $BUILD_DIR to $NEW_DIR"
           mv "$BUILD_DIR" "$NEW_DIR"
           ls -la "$NEW_DIR"
+          
+          # Store the new directory name for subsequent steps
+          echo "FINAL_BUILD_DIR=$NEW_DIR" >> $GITHUB_ENV
       - name: Generate md5 checksum
         run: |
-          BUILD_DIR="atom-matrix-build"
-          echo "Using build directory: $BUILD_DIR"
-          ls -la "$BUILD_DIR"
-          for file in "$BUILD_DIR"/*.bin; do
+          echo "Using build directory: $FINAL_BUILD_DIR"
+          ls -la "$FINAL_BUILD_DIR"
+          for file in "$FINAL_BUILD_DIR"/*.bin; do
             if [ -f "$file" ]; then
               md5sum "$file" | awk '{print $1}' > "${file}.md5"
               md5_length=$(wc -c < "${file}.md5")
@@ -286,12 +362,12 @@ jobs:
               fi
             fi
           done
-          ls -la "$BUILD_DIR"
+          ls -la "$FINAL_BUILD_DIR"
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: atom-matrix
-          path: atom-matrix-build/**/*
+          name: atom-matrix-${{ github.run_id }}  # Include run ID to ensure uniqueness
+          path: ${{ env.FINAL_BUILD_DIR }}/**/*
           retention-days: 5
           if-no-files-found: error
 
@@ -310,7 +386,7 @@ jobs:
         with:
           path: downloaded-artifacts
 
-      - name: List artifacts
+      - name: List and reorganize artifacts
         run: |
           echo "Downloaded artifacts structure:"
           ls -la downloaded-artifacts/
@@ -323,6 +399,26 @@ jobs:
               echo ""
             fi
           done
+          
+          # Reorganize artifacts by removing the run ID suffix for consistent processing
+          for artifact_dir in downloaded-artifacts/*/; do
+            if [ -d "$artifact_dir" ]; then
+              artifact_name=$(basename "$artifact_dir")
+              # Extract base name without run ID (format: target-runid)
+              base_name=$(echo "$artifact_name" | sed 's/-[0-9]*$//')
+              echo "Processing artifact: $artifact_name -> $base_name"
+              
+              # Create new directory with clean name
+              if [ "$artifact_name" != "$base_name" ]; then
+                new_path="downloaded-artifacts/$base_name"
+                echo "Moving $artifact_dir to $new_path"
+                mv "$artifact_dir" "$new_path"
+              fi
+            fi
+          done
+          
+          echo "Reorganized artifacts:"
+          ls -la downloaded-artifacts/
 
       - name: Prepare output directory
         run: |
