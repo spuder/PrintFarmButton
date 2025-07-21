@@ -481,7 +481,15 @@ jobs:
                 if [ -f "$bin_file" ]; then
                   filename=$(basename "$bin_file")
                   if [[ "$target" == "atom-matrix" ]]; then
-                    new_filename="printfarmbutton-atom-matrix-esp32.factory.bin"
+                    # Fixed: Preserve the original file extension/type for atom-matrix
+                    if [[ "$filename" == *".factory.bin" ]]; then
+                      new_filename="printfarmbutton-atom-matrix-esp32.factory.bin"
+                    elif [[ "$filename" == *".ota.bin" ]]; then
+                      new_filename="printfarmbutton-atom-matrix-esp32.ota.bin"
+                    else
+                      # Fallback: determine type based on filename patterns
+                      new_filename="printfarmbutton-atom-matrix-esp32.$(echo "$filename" | sed 's/.*\.\([^.]*\.bin\)$/\1/')"
+                    fi
                   else
                     new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
                   fi
@@ -492,7 +500,15 @@ jobs:
                 if [ -f "$md5_file" ]; then
                   filename=$(basename "$md5_file")
                   if [[ "$target" == "atom-matrix" ]]; then
-                    new_filename="printfarmbutton-atom-matrix-esp32.factory.bin.md5"
+                    # Fixed: Preserve the original file extension/type for atom-matrix MD5 files
+                    if [[ "$filename" == *".factory.bin.md5" ]]; then
+                      new_filename="printfarmbutton-atom-matrix-esp32.factory.bin.md5"
+                    elif [[ "$filename" == *".ota.bin.md5" ]]; then
+                      new_filename="printfarmbutton-atom-matrix-esp32.ota.bin.md5"
+                    else
+                      # Fallback: determine type based on filename patterns
+                      new_filename="printfarmbutton-atom-matrix-esp32.$(echo "$filename" | sed 's/.*\.\([^.]*\.bin\.md5\)$/\1/')"
+                    fi
                   else
                     new_filename=$(echo "$filename" | sed "s/printfarmbutton-$chip_family/printfarmbutton-$board_type-$chip_family/" | sed "s/^printfarmbutton\./printfarmbutton-$board_type-$chip_family./")
                   fi
@@ -550,8 +566,13 @@ jobs:
               target_manifest=""
               board_type=""
               chip_family=""
-              
-              if [[ "$target" == *"supermini"* ]]; then
+              chip_family_name=""
+              if [[ "$target" == "atom-matrix" ]]; then
+                target_manifest="firmware/output/manifest-atom-matrix.json"
+                board_type="atom-matrix"
+                chip_family="esp32"
+                chip_family_name="ESP32"
+              elif [[ "$target" == *"supermini"* ]]; then
                 target_manifest="firmware/output/manifest-supermini.json"
                 board_type="supermini"
               elif [[ "$target" == *"zero"* ]]; then
