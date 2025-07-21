@@ -1,6 +1,7 @@
 substitutions:
   button_internal: "39"
   led_gpio: "27"
+  num_leds: "24"
   manifest_file: "manifest-atom-matrix.json"
 
 # https://docs.m5stack.com/en/core/ATOM%20Matrix

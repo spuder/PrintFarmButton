@@ -4,7 +4,7 @@ light:
   id: printfarmbutton_rgb
   chipset: WS2812
   pin: ${led_gpio}
-  num_leds: 13
+  num_leds: ${num_leds}
   rgb_order: GRB
   # rmt_channel: 0 # Removed invalid option
   # rmt_symbols: 96

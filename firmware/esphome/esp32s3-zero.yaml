@@ -2,6 +2,7 @@ substitutions:
   button_gpio: "1"
   button_internal: "0"
   led_gpio: "2"
+  num_leds: "13"
   manifest_file: "manifest-zero.json"
 
 # https://www.espboards.dev/esp32/esp32-s3-zero/
