@@ -41,12 +41,12 @@ light:
           last_update = now;
         }
         for (int i = 0; i < num_leds; i++) {
-          it[i] = Color(0, 255, 0); // Green background
+          it[i] = Color(255, 255, 0); // Yellow background (Downloading / Starting)
         }
-        // Place 2 pairs of moving dots: white then yellow
+        // Place 2 pairs of moving dots: white then black, so they stand out against the yellow background
         for (int d = 0; d < num_dots; d++) {
           int dot_pos = (pos + (d * num_leds) / num_dots) % num_leds;
           it[dot_pos] = Color(255, 255, 255); // First dot: white
           int dot_pos2 = (dot_pos + 1) % num_leds;
-          it[dot_pos2] = Color(255, 255, 0); // Second dot: yellow
+          it[dot_pos2] = Color(0, 0, 0); // Second dot: black
         }

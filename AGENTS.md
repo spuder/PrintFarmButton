@@ -14,13 +14,16 @@ LED state mapping (source of truth: `firmware/esphome/conf.d/cloud_printago.yaml
 
 | LED | Meaning | Condition |
 |-----|---------|-----------|
-| Off | Offline / unhandled state | `!isOnline`, or `confirmedReady && !isAvailable` |
+| Off | Offline, or no update received for 15 min (staleness timeout) | `!isOnline` |
 | Red (solid) | Error / warning | `printer_has_error_sensor` or `printer_has_warning_sensor` |
-| Green + `Left2Right` | Downloading / preparing | `is_downloading` (Printago state `PREPARE`) |
+| Yellow + `Left2Right` | Downloading / preparing | `is_downloading` (Printago state `PREPARE`) |
 | Blue (solid) | Ready / idle | `confirmedReady && isAvailable` |
 | Magenta (`Pulse`) | Finished, waiting for bed clear | `!confirmedReady && isAvailable` |
 | Green (solid) | Printing / busy | `!isAvailable && !confirmedReady` |
+| White (solid) | Confirmed ready but unavailable (unhandled combination) | `confirmedReady && !isAvailable` |
 | Rainbow | Boot, and on MQTT disconnect | `common.yaml` `on_boot`, `conf.d/mqtt.yaml` `on_disconnect` |
+
+A 5-minute interval re-polls the REST API (`check_printago_status`) to refresh state even when nothing changes over MQTT; a 1-minute interval then forces `printer_is_online_sensor` false if no REST/MQTT update has landed in 15 minutes, so a dead printer can't keep showing its last-known color forever.
 
 ## Repo layout
 
@@ -118,7 +121,7 @@ make clean                # removes .esphome/build/printfarmbutton* and .esphome
 
 ## Known rough edges (from TODO / code comments)
 
-- Yellow/paused and white/grey LED states unimplemented; `confirmedReady && !isAvailable` falls through to LED off.
-- Offline printers have shown green instead of red; Store ID persistence and fetch-on-boot are open items in `TODO`.
+- Paused (throb green) LED state unimplemented.
+- Store ID persistence and fetch-on-boot are open items in `TODO`.
 - `on_update_available` for the update entity is unreliable upstream (esphome/issues#6205), hence the 3-minute polling workaround in `update.yaml`.
 - Power consumption (~300–500 mA target) and long-press-to-mark-failed are not implemented.

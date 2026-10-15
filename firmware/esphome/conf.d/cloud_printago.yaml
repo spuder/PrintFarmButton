@@ -130,6 +130,7 @@ script:
                   id(printer_confirmed_ready_sensor).publish_state(confirmed_ready);
                   id(printer_is_available_sensor).publish_state(is_available);
                   id(printer_is_online_sensor).publish_state(is_online);
+                  id(last_printer_update_millis) = millis();
                 } else {
                   ESP_LOGW("printago", "HTTP error %d", response->status_code);
                 }
@@ -185,9 +186,10 @@ script:
                 and:
                 - lambda: 'return id(is_downloading).state;'
               then:
+              # Yellow (Downloading / Starting, per README legend)
               - light.turn_on:
                   id: printfarmbutton_rgb
-                  red: 0.0
+                  red: 1.0
                   green: 1.0
                   blue: 0.0
                   effect: Left2Right
@@ -606,6 +608,7 @@ text:
 
         ESP_LOGI("mqtt", "All required fields set, enabling MQTT");
         id(clear_printago_status).execute();
+        id(last_printer_update_millis) = millis();
         id(check_printago_status).execute();
         id(mqtt_client_id).enable();
 
@@ -627,7 +630,8 @@ text:
 
         id(mqtt_client_id).subscribe_json(stats_topic, [](const std::string &topic, JsonObject root) {
           ESP_LOGV("mqtt", "Received JSON on stats topic");
-          
+          id(last_printer_update_millis) = millis();
+
           // Handle basic status - simple approach
           id(printer_is_online_sensor).publish_state(!root["isOnline"].isNull() ? (bool)root["isOnline"] : false);
           id(printer_is_available_sensor).publish_state(!root["isAvailable"].isNull() ? (bool)root["isAvailable"] : false);
@@ -685,6 +689,7 @@ text:
               if (!printer_obj["confirmedReady"].isNull()) {
                 bool ready_state = (bool)printer_obj["confirmedReady"];
                 id(printer_confirmed_ready_sensor).publish_state(ready_state);
+                id(last_printer_update_millis) = millis();
               }
             }
           }
@@ -836,3 +841,30 @@ globals:
 - id: printago_printer_names
   type: std::vector<std::string>
   restore_value: false
+
+- id: last_printer_update_millis
+  type: uint32_t
+  restore_value: false
+  initial_value: '0'
+
+interval:
+- interval: 5min
+  then:
+  # Periodic ground-truth refresh so last_printer_update_millis advances even
+  # when the printer is idle and Printago has nothing new to push over MQTT.
+  - script.execute: check_printago_status
+
+- interval: 1min
+  then:
+  - lambda: |-
+      // If neither MQTT nor the REST poll above has updated printer state in a
+      // while, the printer is unreachable even though the sensors still hold
+      // their last-known (possibly busy/ready) value. Force the offline branch
+      // so the LED doesn't keep showing stale state.
+      if (id(printer_is_online_sensor).state) {
+        uint32_t elapsed = millis() - id(last_printer_update_millis);
+        if (elapsed > 15 * 60 * 1000UL) {
+          ESP_LOGW("printago", "No printer update in %u ms, marking offline", elapsed);
+          id(printer_is_online_sensor).publish_state(false);
+        }
+      }
