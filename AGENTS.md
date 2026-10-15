@@ -65,7 +65,7 @@ Each board file sets `button_gpio` / `led_gpio` / `num_leds` / `manifest_file` s
 | `esp32s3-supermini.yaml` | `esp32-s3-devkitc-1` | 13 | 12 | 13 | `button.yaml` | |
 | `esp32c3-zero.yaml` | `esp32-c3-devkitm-1` | 0 | 1 | 13 | `button.yaml` | |
 | `esp32c3-supermini.yaml` | `esp32-c3-devkitm-1` | 4 | 3 | 13 | `button.yaml` | |
-| `atom-matrix.yaml` | `m5stack-atom` | 39 (internal) | 27 | 24 | `button_m5.yaml` | M5 button has no pull-up/down; ATOM Matrix panel is 5×5 |
+| `atom-matrix.yaml` | `m5stack-atom` | 39 (internal) | 27 | 25 | `button_m5.yaml` | M5 button has no pull-up/down; ATOM Matrix panel is 5×5 |
 
 Buttons: external button uses `INPUT_PULLDOWN`, internal uses `INPUT_PULLUP` + `inverted`, M5 uses neither. All use 100 ms `delayed_on`/`delayed_off` debounce and call script `mark_printer_ready` on press.
 
