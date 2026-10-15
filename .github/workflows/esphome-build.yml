@@ -11,449 +11,74 @@ permissions:
   actions: read
   checks: write
 
+concurrency:
+  group: ${{ github.workflow }}
+  cancel-in-progress: false
+
 env:
   ESPHOME_VERSION: 2025.7.0
 
 jobs:
-  build-esp32c3:
+  build:
     runs-on: ubuntu-latest
     strategy:
-      max-parallel: 1  # Ensure builds don't interfere with each other
+      fail-fast: false
       matrix:
         include:
           - target: esp32c3-zero
             yaml_file: esp32c3-zero.yaml
           - target: esp32c3-supermini
             yaml_file: esp32c3-supermini.yaml
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Clean build workspace
-        run: |
-          # Remove any leftover build directories from previous jobs
-          rm -rf printfarmbutton* || true
-          echo "Cleaned workspace"
-          ls -la
-
-      - name: Create empty secrets file
-        run: |
-          touch firmware/esphome/secrets.yaml || true
-      
-      - name: Setup yq
-        uses: vegardit/gha-setup-yq@v1
-
-      - name: Set git sha and unique build ID
-        run: |
-          SUMMARY=$(git log -1 --pretty=%B)
-          SUMMARY="${SUMMARY//'%'/'%25'}"
-          SUMMARY="${SUMMARY//$'\n'/'%0A'}"
-          SUMMARY="${SUMMARY//$'\r'/'%0D'}"
-          echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
-          # Create unique build identifier to avoid conflicts
-          BUILD_ID="${{ matrix.target }}-$(date +%s)-$RANDOM"
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-
-      - name: Modify version.yaml
-        run: |
-          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
-          cat firmware/esphome/conf.d/version.yaml
-
-      - name: Build firmware
-        uses: esphome/build-action@v7
-        with:
-          yaml-file: firmware/esphome/${{ matrix.yaml_file }}
-          complete-manifest: false
-          version: ${{ env.ESPHOME_VERSION }}
-
-      - name: List build output and find specific directory
-        run: |
-          ls -la
-          echo "Looking for build directories..."
-          echo "Expected target: ${{ matrix.target }}"
-          echo "Build ID: $BUILD_ID"
-          
-          # List all directories for debugging
-          for dir in */; do
-            if [ -d "$dir" ]; then
-              echo "Found directory: $dir"
-            fi
-          done
-
-      - name: Rename build directory with target-specific logic
-        run: |
-          # More specific directory finding based on expected ESPHome output
-          BUILD_DIR=""
-          EXPECTED_PATTERNS=(
-            "printfarmbutton*${{ matrix.target }}*"
-            "printfarmbutton*c3*"
-            "printfarmbutton*"
-          )
-          
-          # Try each pattern in order of specificity
-          for pattern in "${EXPECTED_PATTERNS[@]}"; do
-            for dir in $pattern; do
-              if [ -d "$dir" ] && [ -z "$BUILD_DIR" ]; then
-                # Verify this directory contains .bin files
-                if ls "$dir"/*.bin 1> /dev/null 2>&1; then
-                  BUILD_DIR="$dir"
-                  echo "Selected build directory: $BUILD_DIR (matched pattern: $pattern)"
-                  break 2
-                fi
-              fi
-            done
-          done
-          
-          if [ -z "$BUILD_DIR" ]; then
-            echo "Error: No suitable build directory found with .bin files"
-            echo "Available directories:"
-            ls -la
-            exit 1
-          fi
-          
-          # Use target-specific directory name with timestamp to ensure uniqueness
-          NEW_DIR="${{ matrix.target }}-build-$(date +%s)"
-          echo "Renaming $BUILD_DIR to $NEW_DIR"
-          mv "$BUILD_DIR" "$NEW_DIR"
-          ls -la "$NEW_DIR"
-          
-          # Store the new directory name for subsequent steps
-          echo "FINAL_BUILD_DIR=$NEW_DIR" >> $GITHUB_ENV
-
-      - name: Generate md5 checksum
-        run: |
-          echo "Using build directory: $FINAL_BUILD_DIR"
-          ls -la "$FINAL_BUILD_DIR"
-          for file in "$FINAL_BUILD_DIR"/*.bin; do
-            if [ -f "$file" ]; then
-              md5sum "$file" | awk '{print $1}' > "${file}.md5"
-              md5_length=$(wc -c < "${file}.md5")
-              if [ "$md5_length" -ne 33 ]; then
-                echo "MD5 generation failed for $file (length: $md5_length)"
-                exit 1
-              fi
-              echo -n "MD5 for $file: "
-              cat "${file}.md5"
-              echo
-            fi
-          done
-          ls -la "$FINAL_BUILD_DIR"
-
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.target }}-${{ github.run_id }}  # Include run ID to ensure uniqueness
-          path: ${{ env.FINAL_BUILD_DIR }}/**/*
-          retention-days: 5
-          if-no-files-found: error
-
-  build-esp32s3:
-    runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 1  # Ensure builds don't interfere with each other
-      matrix:
-        include:
           - target: esp32s3-zero
             yaml_file: esp32s3-zero.yaml
           - target: esp32s3-supermini
             yaml_file: esp32s3-supermini.yaml
+          - target: atom-matrix
+            yaml_file: atom-matrix.yaml
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - name: Clean build workspace
-        run: |
-          # Remove any leftover build directories from previous jobs
-          rm -rf printfarmbutton* || true
-          echo "Cleaned workspace"
-          ls -la
-          
-      - name: Create empty secrets file
-        run: |
-          touch firmware/esphome/secrets.yaml || true
-      
-      - name: Setup yq
-        uses: vegardit/gha-setup-yq@v1
-
-      - name: Set git sha and unique build ID
-        run: |
-          SUMMARY=$(git log -1 --pretty=%B)
-          SUMMARY="${SUMMARY//'%'/'%25'}"
-          SUMMARY="${SUMMARY//$'\n'/'%0A'}"
-          SUMMARY="${SUMMARY//$'\r'/'%0D'}"
-          echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
-          # Create unique build identifier to avoid conflicts
-          BUILD_ID="${{ matrix.target }}-$(date +%s)-$RANDOM"
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-
-      - name: Modify version.yaml
-        run: |
-          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
-          cat firmware/esphome/conf.d/version.yaml
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
 
       - name: Build firmware
-        uses: esphome/build-action@v7
+        id: build
+        uses: ./.github/actions/build-firmware
         with:
-          yaml-file: firmware/esphome/${{ matrix.yaml_file }}
-          complete-manifest: false
-          version: ${{ env.ESPHOME_VERSION }}
-
-      - name: List build output and find specific directory
-        run: |
-          ls -la
-          echo "Looking for build directories..."
-          echo "Expected target: ${{ matrix.target }}"
-          echo "Build ID: $BUILD_ID"
-          
-          # List all directories for debugging
-          for dir in */; do
-            if [ -d "$dir" ]; then
-              echo "Found directory: $dir"
-            fi
-          done
-
-      - name: Rename build directory with target-specific logic
-        run: |
-          # More specific directory finding based on expected ESPHome output
-          BUILD_DIR=""
-          EXPECTED_PATTERNS=(
-            "printfarmbutton*${{ matrix.target }}*"
-            "printfarmbutton*s3*"
-            "printfarmbutton*"
-          )
-          
-          # Try each pattern in order of specificity
-          for pattern in "${EXPECTED_PATTERNS[@]}"; do
-            for dir in $pattern; do
-              if [ -d "$dir" ] && [ -z "$BUILD_DIR" ]; then
-                # Verify this directory contains .bin files
-                if ls "$dir"/*.bin 1> /dev/null 2>&1; then
-                  BUILD_DIR="$dir"
-                  echo "Selected build directory: $BUILD_DIR (matched pattern: $pattern)"
-                  break 2
-                fi
-              fi
-            done
-          done
-          
-          if [ -z "$BUILD_DIR" ]; then
-            echo "Error: No suitable build directory found with .bin files"
-            echo "Available directories:"
-            ls -la
-            exit 1
-          fi
-          
-          # Use target-specific directory name with timestamp to ensure uniqueness
-          NEW_DIR="${{ matrix.target }}-build-$(date +%s)"
-          echo "Renaming $BUILD_DIR to $NEW_DIR"
-          mv "$BUILD_DIR" "$NEW_DIR"
-          ls -la "$NEW_DIR"
-          
-          # Store the new directory name for subsequent steps
-          echo "FINAL_BUILD_DIR=$NEW_DIR" >> $GITHUB_ENV
-
-      - name: Generate md5 checksum
-        run: |
-          echo "Using build directory: $FINAL_BUILD_DIR"
-          ls -la "$FINAL_BUILD_DIR"
-          for file in "$FINAL_BUILD_DIR"/*.bin; do
-            if [ -f "$file" ]; then
-              md5sum "$file" | awk '{print $1}' > "${file}.md5"
-              md5_length=$(wc -c < "${file}.md5")
-              if [ "$md5_length" -ne 33 ]; then
-                echo "MD5 generation failed for $file (length: $md5_length)"
-                exit 1
-              fi
-              echo -n "MD5 for $file: "
-              cat "${file}.md5"
-              echo
-            fi
-          done
-          ls -la "$FINAL_BUILD_DIR"
+          target: ${{ matrix.target }}
+          yaml_file: ${{ matrix.yaml_file }}
+          version: ${{ github.ref_name }}
+          esphome_version: ${{ env.ESPHOME_VERSION }}
 
       - name: Upload artifacts
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: ${{ matrix.target }}-${{ github.run_id }}  # Include run ID to ensure uniqueness
-          path: ${{ env.FINAL_BUILD_DIR }}/**/*
-          retention-days: 5
-          if-no-files-found: error
-
-  build-atom-matrix:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Clean build workspace
-        run: |
-          # Remove any leftover build directories from previous jobs
-          rm -rf printfarmbutton* || true
-          echo "Cleaned workspace"
-          ls -la
-      - name: Create empty secrets file
-        run: |
-          touch firmware/esphome/secrets.yaml || true
-      - name: Setup yq
-        uses: vegardit/gha-setup-yq@v1
-      - name: Set git sha and unique build ID
-        run: |
-          SUMMARY=$(git log -1 --pretty=%B)
-          SUMMARY="${SUMMARY//'%'/'%25'}"
-          SUMMARY="${SUMMARY//$'\n'/'%0A'}"
-          SUMMARY="${SUMMARY//$'\r'/'%0D'}"
-          echo "RELEASE_SUMMARY=$SUMMARY" >> $GITHUB_ENV
-          # Create unique build identifier to avoid conflicts
-          BUILD_ID="atom-matrix-$(date +%s)-$RANDOM"
-          echo "BUILD_ID=$BUILD_ID" >> $GITHUB_ENV
-      - name: Modify version.yaml
-        run: |
-          yq -i '.substitutions.version = "${{ github.ref_name }}"' firmware/esphome/conf.d/version.yaml
-          cat firmware/esphome/conf.d/version.yaml
-      - name: Build firmware
-        uses: esphome/build-action@v7
-        with:
-          yaml-file: firmware/esphome/atom-matrix.yaml
-          complete-manifest: false
-          version: ${{ env.ESPHOME_VERSION }}
-      - name: List build output and find specific directory
-        run: |
-          ls -la
-          echo "Looking for build directories..."
-          echo "Expected target: atom-matrix"
-          echo "Build ID: $BUILD_ID"
-          
-          # List all directories for debugging
-          for dir in */; do
-            if [ -d "$dir" ]; then
-              echo "Found directory: $dir"
-            fi
-          done
-      - name: Rename build directory with atom-matrix specific logic
-        run: |
-          # More specific directory finding for atom-matrix
-          BUILD_DIR=""
-          EXPECTED_PATTERNS=(
-            "printfarmbutton*atom*"
-            "printfarmbutton*matrix*"
-            "printfarmbutton*esp32*"
-            "printfarmbutton*"
-          )
-          
-          # Try each pattern in order of specificity
-          for pattern in "${EXPECTED_PATTERNS[@]}"; do
-            for dir in $pattern; do
-              if [ -d "$dir" ] && [ -z "$BUILD_DIR" ]; then
-                # Verify this directory contains .bin files
-                if ls "$dir"/*.bin 1> /dev/null 2>&1; then
-                  BUILD_DIR="$dir"
-                  echo "Selected build directory: $BUILD_DIR (matched pattern: $pattern)"
-                  break 2
-                fi
-              fi
-            done
-          done
-          
-          if [ -z "$BUILD_DIR" ]; then
-            echo "Error: No suitable build directory found with .bin files"
-            echo "Available directories:"
-            ls -la
-            exit 1
-          fi
-          
-          # Use atom-matrix-specific directory name with timestamp to ensure uniqueness
-          NEW_DIR="atom-matrix-build-$(date +%s)"
-          echo "Renaming $BUILD_DIR to $NEW_DIR"
-          mv "$BUILD_DIR" "$NEW_DIR"
-          ls -la "$NEW_DIR"
-          
-          # Store the new directory name for subsequent steps
-          echo "FINAL_BUILD_DIR=$NEW_DIR" >> $GITHUB_ENV
-      - name: Generate md5 checksum
-        run: |
-          echo "Using build directory: $FINAL_BUILD_DIR"
-          ls -la "$FINAL_BUILD_DIR"
-          for file in "$FINAL_BUILD_DIR"/*.bin; do
-            if [ -f "$file" ]; then
-              md5sum "$file" | awk '{print $1}' > "${file}.md5"
-              md5_length=$(wc -c < "${file}.md5")
-              if [ "$md5_length" -ne 33 ]; then
-                echo "MD5 generation failed for $file (length: $md5_length)"
-                exit 1
-              fi
-              echo -n "MD5 for $file: "
-              cat "${file}.md5"
-              echo
-            fi
-          done
-          ls -la "$FINAL_BUILD_DIR"
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: atom-matrix-${{ github.run_id }}  # Include run ID to ensure uniqueness
-          path: ${{ env.FINAL_BUILD_DIR }}/**/*
+          name: ${{ matrix.target }}
+          path: ${{ steps.build.outputs.build_dir }}/**/*
           retention-days: 5
           if-no-files-found: error
 
   combine-and-deploy:
-    needs: [build-esp32c3, build-esp32s3, build-atom-matrix]
+    needs: build
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/')
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - name: Checkout main
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
         with:
-          fetch-depth: 0
-
-      - name: Clean build workspace
-        run: |
-          # Remove any leftover build directories from previous jobs
-          rm -rf printfarmbutton* || true
-          echo "Cleaned workspace"
-          ls -la
+          ref: main
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4
         with:
           path: downloaded-artifacts
 
-      - name: List and reorganize artifacts
+      - name: List downloaded artifacts
         run: |
           echo "Downloaded artifacts structure:"
           ls -la downloaded-artifacts/
-          echo ""
-          echo "Contents of each artifact:"
           for dir in downloaded-artifacts/*/; do
-            if [ -d "$dir" ]; then
-              echo "=== Contents of $dir ==="
-              ls -la "$dir"
-              echo ""
-            fi
+            echo "=== Contents of $dir ==="
+            ls -la "$dir"
           done
-          
-          # Reorganize artifacts by removing the run ID suffix for consistent processing
-          for artifact_dir in downloaded-artifacts/*/; do
-            if [ -d "$artifact_dir" ]; then
-              artifact_name=$(basename "$artifact_dir")
-              # Extract base name without run ID (format: target-runid)
-              base_name=$(echo "$artifact_name" | sed 's/-[0-9]*$//')
-              echo "Processing artifact: $artifact_name -> $base_name"
-              
-              # Create new directory with clean name
-              if [ "$artifact_name" != "$base_name" ]; then
-                new_path="downloaded-artifacts/$base_name"
-                echo "Moving $artifact_dir to $new_path"
-                mv "$artifact_dir" "$new_path"
-              fi
-            fi
-          done
-          
-          echo "Reorganized artifacts:"
-          ls -la downloaded-artifacts/
 
       - name: Prepare output directory
         run: |
@@ -518,15 +143,11 @@ jobs:
             fi
           done
 
-      - name: Get version from git tag or branch
-        id: get_version
-        run: |
-          # Prefer tags that do NOT start with 'v' if both exist on the same commit
-          VERSION=$(git tag --points-at HEAD | grep -E '^[0-9]+\.[0-9]+\.[0-9]+' | head -n1)
-          if [ -z "$VERSION" ]; then
-            VERSION=${GITHUB_REF_NAME}
-          fi
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Determine release version
+        run: echo "VERSION=${{ github.ref_name }}" >> "$GITHUB_ENV"
+
+      - name: Setup yq
+        uses: vegardit/gha-setup-yq@95fc563100306ca9918e9d18f38e85430ba285bc # v1 (1.1.1)
 
       - name: Create manifest files
         run: |
@@ -555,12 +176,12 @@ jobs:
           echo "Looking for build artifacts..."
           for target in esp32s3-supermini esp32s3-zero esp32c3-supermini esp32c3-zero; do
             echo "Processing build: $target"
-            
+
             # Check if the artifact directory exists
             if [ -d "downloaded-artifacts/$target" ]; then
               echo "Found artifact directory: downloaded-artifacts/$target"
               ls -la "downloaded-artifacts/$target"
-              
+
               # Determine project name, target manifest, and filename pattern
               project_name="spuder.printfarmbutton"
               target_manifest=""
@@ -582,36 +203,36 @@ jobs:
                 echo "Error: Cannot determine target manifest for: $target"
                 exit 1
               fi
-              
+
               if [[ "$target" == *"s3"* ]]; then
                 chip_family="esp32s3"
               elif [[ "$target" == *"c3"* ]]; then
                 chip_family="esp32c3"
               fi
-              
+
               # Check if manifest.json exists
               if [ -f "downloaded-artifacts/$target/manifest.json" ]; then
                 echo "Found ESPHome-generated manifest.json for $target"
                 echo "Manifest contents:"
                 cat "downloaded-artifacts/$target/manifest.json"
-                
+
                 # Process the manifest and update file paths to use renamed files
                 manifest_content=$(cat "downloaded-artifacts/$target/manifest.json")
-                
+
                 # Update file paths in the manifest to use renamed files
                 updated_manifest=$(echo "$manifest_content" | jq --arg board_type "$board_type" --arg chip_family "$chip_family" --arg project "$project_name" '
                   . + {"project": $project} |
                   if .parts then .parts = [.parts[] | .path = (.path | gsub("printfarmbutton-" + $chip_family; "printfarmbutton-" + $board_type + "-" + $chip_family) | gsub("^printfarmbutton\\."; "printfarmbutton-" + $board_type + "-" + $chip_family + "."))] else . end |
                   if .ota then .ota.path = (.ota.path | gsub("printfarmbutton-" + $chip_family; "printfarmbutton-" + $board_type + "-" + $chip_family) | gsub("^printfarmbutton\\."; "printfarmbutton-" + $board_type + "-" + $chip_family + ".")) else . end
                 ')
-                
+
                 # Add the build entry to the target manifest only
                 jq --argjson new_build "$updated_manifest" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
-                
+
                 echo "Successfully added $target to manifest using ESPHome manifest"
               else
                 echo "No ESPHome manifest found for $target, creating fallback entry..."
-                
+
                 # Create fallback manifest entry
                 chip_family_name="ESP32"
                 if [[ "$target" == *"s3"* ]]; then
@@ -619,34 +240,34 @@ jobs:
                 elif [[ "$target" == *"c3"* ]]; then
                   chip_family_name="ESP32-C3"
                 fi
-                
+
                 # Look for binary files (use renamed files in output directory)
                 factory_bin=""
                 ota_bin=""
-                
+
                 # Check for renamed files in output directory
                 if [ -f "firmware/output/printfarmbutton-$board_type-$chip_family.factory.bin" ]; then
                   factory_bin="printfarmbutton-$board_type-$chip_family.factory.bin"
                 fi
-                
+
                 if [ -f "firmware/output/printfarmbutton-$board_type-$chip_family.ota.bin" ]; then
                   ota_bin="printfarmbutton-$board_type-$chip_family.ota.bin"
                 fi
-                
+
                 # Create manifest entry
                 if [ -n "$factory_bin" ] && [ -n "$ota_bin" ]; then
                   echo "Creating full manifest entry with factory and OTA binaries"
                   manifest_entry=$(jq -n --arg chip "$chip_family_name" --arg project "$project_name" --arg factory_path "$factory_bin" --arg ota_path "$ota_bin" '{
-                    "chipFamily": $chip, 
-                    "project": $project, 
+                    "chipFamily": $chip,
+                    "project": $project,
                     "parts": [{"path": $factory_path, "offset": 0}],
                     "ota": {"path": $ota_path}
                   }')
                 elif [ -n "$factory_bin" ]; then
                   echo "Creating manifest entry with factory binary only"
                   manifest_entry=$(jq -n --arg chip "$chip_family_name" --arg project "$project_name" --arg factory_path "$factory_bin" '{
-                    "chipFamily": $chip, 
-                    "project": $project, 
+                    "chipFamily": $chip,
+                    "project": $project,
                     "parts": [{"path": $factory_path, "offset": 0}]
                   }')
                 else
@@ -655,10 +276,10 @@ jobs:
                   ls -la "downloaded-artifacts/$target/"
                   exit 1
                 fi
-                
+
                 # Add to target manifest only
                 jq --argjson new_build "$manifest_entry" '.builds += [$new_build]' "$target_manifest" > temp.json && mv temp.json "$target_manifest"
-                
+
                 echo "Successfully created fallback manifest entry for $target"
               fi
             else
@@ -744,12 +365,9 @@ jobs:
 
       - name: Commit and push build artifacts
         run: |
+          yq -i '.substitutions.version = "${{ env.VERSION }}"' firmware/esphome/conf.d/version.yaml
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git stash push -m "Stash before switching to main"
-          git checkout main
-          git pull origin main
-          git stash apply || true
           git add firmware/output/
           git add firmware/esphome/conf.d/version.yaml
           if git diff --staged --quiet; then
