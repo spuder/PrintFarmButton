@@ -1,0 +1,74 @@
+name: Build ESPHome firmware
+description: Builds one PrintFarmButton board and produces its factory/OTA binaries with MD5 checksums.
+
+inputs:
+  target:
+    description: Build target identifier (e.g. esp32c3-zero), used for the output directory name.
+    required: true
+  yaml_file:
+    description: ESPHome entrypoint YAML file name under firmware/esphome/.
+    required: true
+  version:
+    description: Firmware version string to embed via conf.d/version.yaml.
+    required: true
+  esphome_version:
+    description: ESPHome release to build with.
+    required: true
+
+outputs:
+  build_dir:
+    description: Path to the directory containing the built .bin/.md5 files.
+    value: ${{ steps.rename.outputs.build_dir }}
+
+runs:
+  using: composite
+  steps:
+    - name: Create empty secrets file
+      shell: bash
+      run: touch firmware/esphome/secrets.yaml
+
+    - name: Setup yq
+      uses: vegardit/gha-setup-yq@95fc563100306ca9918e9d18f38e85430ba285bc # v1 (1.1.1)
+
+    - name: Set firmware version
+      shell: bash
+      run: yq -i '.substitutions.version = "${{ inputs.version }}"' firmware/esphome/conf.d/version.yaml
+
+    - name: Build firmware
+      uses: esphome/build-action@f0a331817f5535854a10a42621b6a8b7ebe95c4c # v7
+      with:
+        yaml-file: firmware/esphome/${{ inputs.yaml_file }}
+        complete-manifest: false
+        version: ${{ inputs.esphome_version }}
+
+    - name: Rename build directory and generate checksums
+      id: rename
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        BUILD_DIR=""
+        for dir in printfarmbutton*/; do
+          dir="${dir%/}"
+          if [ -d "$dir" ] && ls "$dir"/*.bin >/dev/null 2>&1; then
+            BUILD_DIR="$dir"
+            break
+          fi
+        done
+
+        if [ -z "$BUILD_DIR" ]; then
+          echo "::error::No build directory with .bin files found for target ${{ inputs.target }}"
+          ls -la
+          exit 1
+        fi
+
+        NEW_DIR="${{ inputs.target }}-build"
+        mv "$BUILD_DIR" "$NEW_DIR"
+
+        for file in "$NEW_DIR"/*.bin; do
+          [ -f "$file" ] || continue
+          md5sum "$file" | awk '{print $1}' > "${file}.md5"
+        done
+
+        ls -la "$NEW_DIR"
+        echo "build_dir=$NEW_DIR" >> "$GITHUB_OUTPUT"
